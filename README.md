@@ -2,7 +2,7 @@
 
 Safe Rust bindings for Apple's `WKWebView` APIs on macOS.
 
-> **Status:** v0.2.0 — expanded Swift-bridge coverage for `WKWebView`, `WKWebViewConfiguration`, `WKWebsiteDataStore`, `WKHTTPCookieStore`, `WKContentRuleListStore`, `WKPreferences`, delegates, downloads, snapshots, and PDF generation. See [`COVERAGE.md`](COVERAGE.md) for the audited SDK matrix.
+> **Status:** v0.2.1 — expanded Swift-bridge coverage for find-in-page APIs, typed navigation delegate details, custom URL schemes, `WKWebExtension*`, upgraded webpage preference policies, and the existing `WKWebView` / storage / snapshot / download surface. See [`COVERAGE.md`](COVERAGE.md) for the audited SDK matrix.
 
 ## Quick start
 
@@ -36,13 +36,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 - `WKWebView`
   - offscreen construction
   - HTML / URL / file / raw-data loading
-  - synchronous JavaScript evaluation and async JavaScript calls
+  - synchronous JavaScript evaluation, async JavaScript calls, and find-in-page
   - navigation / reload / stop / progress / history queries
   - custom user agent, page zoom, media type, inspectable state
   - PNG snapshots, PDF output, and downloads
 - `WKWebViewConfiguration`
-  - application name, AirPlay, content JavaScript toggle
-  - `WKPreferences` round-tripping
+  - application name, AirPlay, content JavaScript toggle, and custom URL scheme handlers
+  - `WKPreferences` round-tripping, including upgrade-to-HTTPS policy
   - `WKWebsiteDataStore` assignment and retrieval
   - user scripts, script-message handler registration, content rule lists
 - `WKWebsiteDataStore`
@@ -60,9 +60,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   - compile / look up / remove rule lists
   - list available identifiers
 - Delegates and events
-  - `WKNavigationDelegate`
+  - `WKNavigationDelegate` with typed action / response / frame summaries
   - `WKUIDelegate`
   - `WKScriptMessageHandler`
+- `WKURLSchemeHandler` / `WKURLSchemeTask`
+  - Rust trait callbacks for custom schemes
+  - safe task request / response helpers
+- `WKWebExtension*`
+  - extensions, contexts, controllers, match patterns, permissions, and data records
+  - notification names, permission / data-type constants, message-port helpers, and related value types
 - Supporting types
   - `WKUserScript`
   - `WKNavigation`
@@ -73,8 +79,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Examples and tests
 
-- `examples/` contains 15 numbered, headless-safe examples covering every requested logical area.
-- `tests/` contains 15 area-specific test files.
+- `examples/` contains 18 numbered, headless-safe examples covering every requested logical area.
+- `tests/` contains 18 area-specific test files.
 - Live `WKWebView` smoke tests that require the process main thread are represented as runnable examples and as `#[ignore]` integration tests with notes.
 
 ## Requirements

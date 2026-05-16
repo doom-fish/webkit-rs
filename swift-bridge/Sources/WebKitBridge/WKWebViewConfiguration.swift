@@ -1,6 +1,44 @@
 import Foundation
 import WebKit
 
+@available(macOS 15.2, *)
+private func wkUpgradeToHTTPSPolicyString(
+    _ policy: WKWebpagePreferences.UpgradeToHTTPSPolicy
+) -> String {
+    switch policy {
+    case .keepAsRequested:
+        return "keepAsRequested"
+    case .automaticFallbackToHTTP:
+        return "automaticFallbackToHTTP"
+    case .userMediatedFallbackToHTTP:
+        return "userMediatedFallbackToHTTP"
+    case .errorOnFailure:
+        return "errorOnFailure"
+    @unknown default:
+        return "keepAsRequested"
+    }
+}
+
+@available(macOS 15.2, *)
+private func wkUpgradeToHTTPSPolicy(from rawValue: Any) -> WKWebpagePreferences.UpgradeToHTTPSPolicy? {
+    if let string = rawValue as? String {
+        switch string {
+        case "automaticFallbackToHTTP":
+            return .automaticFallbackToHTTP
+        case "userMediatedFallbackToHTTP":
+            return .userMediatedFallbackToHTTP
+        case "errorOnFailure":
+            return .errorOnFailure
+        default:
+            return .keepAsRequested
+        }
+    }
+    if let value = rawValue as? NSNumber {
+        return WKWebpagePreferences.UpgradeToHTTPSPolicy(rawValue: value.intValue)
+    }
+    return nil
+}
+
 private func wkPreferencesDictionary(from configuration: WKWebViewConfiguration) -> [String: Any] {
     let preferences = configuration.preferences
     var dictionary: [String: Any] = [
@@ -13,7 +51,8 @@ private func wkPreferencesDictionary(from configuration: WKWebViewConfiguration)
         "textInteractionEnabled": true,
         "siteSpecificQuirksModeEnabled": true,
         "elementFullscreenEnabled": false,
-        "inactiveSchedulingPolicy": "Suspend"
+        "inactiveSchedulingPolicy": "Suspend",
+        "upgradeToHTTPSPolicy": "keepAsRequested"
     ]
     if #available(macOS 13.3, *) {
         dictionary["shouldPrintBackgrounds"] = preferences.shouldPrintBackgrounds
@@ -39,6 +78,11 @@ private func wkPreferencesDictionary(from configuration: WKWebViewConfiguration)
         @unknown default:
             "Suspend"
         }
+    }
+    if #available(macOS 15.2, *) {
+        dictionary["upgradeToHTTPSPolicy"] = wkUpgradeToHTTPSPolicyString(
+            configuration.defaultWebpagePreferences.preferredHTTPSNavigationPolicy
+        )
     }
     return dictionary
 }
@@ -89,11 +133,16 @@ private func wkApplyPreferences(_ dictionary: [String: Any], to configuration: W
     if let value = dictionary["javaScriptEnabled"] as? Bool {
         configuration.defaultWebpagePreferences.allowsContentJavaScript = value
     }
+    if #available(macOS 15.2, *), let value = dictionary["upgradeToHTTPSPolicy"] {
+        configuration.defaultWebpagePreferences.preferredHTTPSNavigationPolicy =
+            wkUpgradeToHTTPSPolicy(from: value) ?? .keepAsRequested
+    }
 }
 
 final class WKConfigBox: NSObject {
     let config: WKWebViewConfiguration
     var registeredHandlerNames: [String] = []
+    var registeredURLSchemeHandlers: [String: AnyObject] = [:]
 
     init(configuration: WKWebViewConfiguration) {
         self.config = configuration

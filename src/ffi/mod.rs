@@ -4,10 +4,14 @@ use core::ffi::{c_char, c_void};
 
 pub mod content_rule_list_store;
 pub mod http_cookie_store;
+pub mod url_scheme;
+pub mod web_extension;
 pub mod website_data_store;
 
 pub use content_rule_list_store::*;
 pub use http_cookie_store::*;
+pub use url_scheme::*;
+pub use web_extension::*;
 pub use website_data_store::*;
 
 pub type WKNavCallback =
@@ -162,6 +166,13 @@ unsafe extern "C" {
     pub fn wk_webview_call_async_js(
         ptr: *mut c_void,
         js: *const c_char,
+        out_result: *mut *mut c_char,
+        out_err: *mut *mut c_char,
+    ) -> i32;
+    pub fn wk_webview_find_string(
+        ptr: *mut c_void,
+        query: *const c_char,
+        configuration_json: *const c_char,
         out_result: *mut *mut c_char,
         out_err: *mut *mut c_char,
     ) -> i32;

@@ -7,6 +7,7 @@ fn webview_configuration_roundtrips_basic_settings() {
     let preferences = Preferences {
         minimum_font_size: 14.0,
         java_script_can_open_windows_automatically: false,
+        upgrade_to_https_policy: UpgradeToHTTPSPolicy::AutomaticFallbackToHttp,
         ..Preferences::default()
     };
     config.set_preferences(&preferences);
@@ -17,5 +18,10 @@ fn webview_configuration_roundtrips_basic_settings() {
     assert_eq!(config.application_name_for_user_agent(), "webkit-rs/test");
     assert!(!config.allows_airplay_for_media_playback());
     assert!(config.allows_content_javascript());
-    assert!((config.preferences().minimum_font_size - 14.0).abs() < f64::EPSILON);
+    let roundtrip = config.preferences();
+    assert!((roundtrip.minimum_font_size - 14.0).abs() < f64::EPSILON);
+    assert_eq!(
+        roundtrip.upgrade_to_https_policy,
+        UpgradeToHTTPSPolicy::AutomaticFallbackToHttp
+    );
 }

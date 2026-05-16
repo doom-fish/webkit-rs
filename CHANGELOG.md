@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.1] - 2026-05-16
+
+### Added
+
+- Added `WKFindConfiguration` / `WKFindResult` wrappers and `WebView::find_string{,_with_configuration}`.
+- Added typed `WKNavigationAction`, `WKNavigationResponse`, `WKFrameInfo`, and `WKNavigationType` models to navigation delegate events.
+- Added `WKURLSchemeHandler` / `WKURLSchemeTask` support via `WebViewConfiguration::set_url_scheme_handler` and safe Rust task helpers.
+- Added the requested `WKWebExtension*` surface wrappers for extensions, contexts, controllers, match patterns, permissions, data records, message ports, notifications, and related value types.
+- Added `WKWebpagePreferencesUpgradeToHTTPSPolicy` support through `Preferences::upgrade_to_https_policy`.
+- Added numbered examples `16_find`, `17_url_scheme`, and `18_web_extension`, plus focused tests for the new logical areas.
+
+### Changed
+
+- Bumped the crate version from `0.2.0` to `0.2.1`.
+- Refreshed the README and coverage audit to reflect the widened WebKit surface.
+
 ## [0.2.0] - 2026-05-16
 
 ### Added

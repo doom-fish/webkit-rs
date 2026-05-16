@@ -3,10 +3,10 @@
 Full top-level symbol audit of WebKit.framework headers after filtering out declarations unavailable on macOS. Legacy DOM* / Web* APIs remain listed as EXEMPT because Apple deprecated them on macOS and this crate intentionally targets the modern WK* surface.
 
 SDK_PUBLIC_SYMBOLS: 367
-VERIFIED: 43
-GAPS: 91
+VERIFIED: 114
+GAPS: 20
 EXEMPT: 233
-COVERAGE_PCT: 32.1%
+COVERAGE_PCT: 85.1%
 
 ## 🟢 VERIFIED
 | Symbol | Kind | Header | Wrapped by |
@@ -21,10 +21,16 @@ COVERAGE_PCT: 32.1%
 | WKCookiePolicy | enum | WKHTTPCookieStore.h | CookiePolicy |
 | WKHTTPCookieStore | interface | WKHTTPCookieStore.h | HttpCookieStore |
 | WKHTTPCookieStoreObserver | protocol | WKHTTPCookieStore.h | HttpCookieStore::{start_observing, drain_events} |
+| WKFindConfiguration | interface | WKFindConfiguration.h | FindConfiguration, WebView::find_string_with_configuration |
+| WKFindResult | interface | WKFindResult.h | FindResult, WebView::find_string |
+| WKFrameInfo | interface | WKFrameInfo.h | FrameInfo |
 | WKNavigation | interface | WKNavigation.h | Navigation |
+| WKNavigationAction | interface | WKNavigationAction.h | NavigationAction |
 | WKNavigationActionPolicy | enum | WKNavigationDelegate.h | NavigationActionPolicy |
 | WKNavigationDelegate | protocol | WKNavigationDelegate.h | NavigationDelegateConfig, NavigationEvent |
+| WKNavigationResponse | interface | WKNavigationResponse.h | NavigationResponse |
 | WKNavigationResponsePolicy | enum | WKNavigationDelegate.h | NavigationResponsePolicy |
+| WKNavigationType | enum | WKNavigationAction.h | NavigationType |
 | WKPDFConfiguration | interface | WKPDFConfiguration.h | PDFConfiguration |
 | WKInactiveSchedulingPolicy | enum | WKPreferences.h | InactiveSchedulingPolicy |
 | WKPreferences | interface | WKPreferences.h | Preferences |
@@ -32,12 +38,77 @@ COVERAGE_PCT: 32.1%
 | WKScriptMessageHandler | protocol | WKScriptMessageHandler.h | WebView::set_message_handler, ScriptMessage |
 | WKSnapshotConfiguration | interface | WKSnapshotConfiguration.h | SnapshotConfiguration |
 | WKUIDelegate | protocol | WKUIDelegate.h | UIDelegateConfig, UIDelegateEvent |
+| WKURLSchemeHandler | protocol | WKURLSchemeHandler.h | UrlSchemeHandler, WebViewConfiguration::set_url_scheme_handler |
+| WKURLSchemeTask | protocol | WKURLSchemeTask.h | UrlSchemeTask |
 | WKUserContentController | interface | WKUserContentController.h | WebViewConfiguration::{add_user_script, add_content_rule_list, add_message_handler} |
 | WKUserScript | interface | WKUserScript.h | UserScript |
 | WKUserScriptInjectionTime | enum | WKUserScript.h | InjectionTime |
+| WKWebExtension | interface | WKWebExtension.h | WebExtension |
+| WKWebExtensionAction | interface | WKWebExtensionAction.h | WebExtensionAction, WebExtensionContext::action |
+| WKWebExtensionCommand | interface | WKWebExtensionCommand.h | WebExtensionCommand, WebExtensionContext::commands |
+| WKWebExtensionContext | interface | WKWebExtensionContext.h | WebExtensionContext |
+| WKWebExtensionContextDeniedPermissionMatchPatternsWereRemovedNotification | constant | WKWebExtensionContext.h | WebExtensionContextNotifications::denied_permission_match_patterns_were_removed() |
+| WKWebExtensionContextDeniedPermissionsWereRemovedNotification | constant | WKWebExtensionContext.h | WebExtensionContextNotifications::denied_permissions_were_removed() |
+| WKWebExtensionContextError | enum | WKWebExtensionContext.h | WebExtensionContextError |
+| WKWebExtensionContextErrorDomain | constant | WKWebExtensionContext.h | WebExtensionContextError::domain() |
+| WKWebExtensionContextErrorsDidUpdateNotification | constant | WKWebExtensionContext.h | WebExtensionContextNotifications::errors_did_update() |
+| WKWebExtensionContextGrantedPermissionMatchPatternsWereRemovedNotification | constant | WKWebExtensionContext.h | WebExtensionContextNotifications::granted_permission_match_patterns_were_removed() |
+| WKWebExtensionContextGrantedPermissionsWereRemovedNotification | constant | WKWebExtensionContext.h | WebExtensionContextNotifications::granted_permissions_were_removed() |
+| WKWebExtensionContextNotificationUserInfoKey | typealias | WKWebExtensionContext.h | WebExtensionContextNotificationUserInfoKey |
+| WKWebExtensionContextNotificationUserInfoKeyMatchPatterns | constant | WKWebExtensionContext.h | WebExtensionContextNotificationUserInfoKey::match_patterns() |
+| WKWebExtensionContextNotificationUserInfoKeyPermissions | constant | WKWebExtensionContext.h | WebExtensionContextNotificationUserInfoKey::permissions() |
+| WKWebExtensionContextPermissionMatchPatternsWereDeniedNotification | constant | WKWebExtensionContext.h | WebExtensionContextNotifications::permission_match_patterns_were_denied() |
+| WKWebExtensionContextPermissionMatchPatternsWereGrantedNotification | constant | WKWebExtensionContext.h | WebExtensionContextNotifications::permission_match_patterns_were_granted() |
+| WKWebExtensionContextPermissionStatus | enum | WKWebExtensionContext.h | WebExtensionContextPermissionStatus |
+| WKWebExtensionContextPermissionsWereDeniedNotification | constant | WKWebExtensionContext.h | WebExtensionContextNotifications::permissions_were_denied() |
+| WKWebExtensionContextPermissionsWereGrantedNotification | constant | WKWebExtensionContext.h | WebExtensionContextNotifications::permissions_were_granted() |
+| WKWebExtensionController | interface | WKWebExtensionController.h | WebExtensionController |
+| WKWebExtensionControllerConfiguration | interface | WKWebExtensionControllerConfiguration.h | WebExtensionControllerConfiguration |
+| WKWebExtensionControllerDelegate | protocol | WKWebExtensionControllerDelegate.h | WebExtensionControllerDelegate |
+| WKWebExtensionDataRecord | interface | WKWebExtensionDataRecord.h | WebExtensionDataRecord |
+| WKWebExtensionDataRecordError | enum | WKWebExtensionDataRecord.h | WebExtensionDataRecordError |
+| WKWebExtensionDataRecordErrorDomain | constant | WKWebExtensionDataRecord.h | WebExtensionDataRecordError::domain() |
+| WKWebExtensionDataType | typealias | WKWebExtensionDataType.h | WebExtensionDataType |
+| WKWebExtensionDataTypeLocal | constant | WKWebExtensionDataType.h | WebExtensionDataType::local() |
+| WKWebExtensionDataTypeSession | constant | WKWebExtensionDataType.h | WebExtensionDataType::session() |
+| WKWebExtensionDataTypeSynchronized | constant | WKWebExtensionDataType.h | WebExtensionDataType::synchronized() |
+| WKWebExtensionError | enum | WKWebExtension.h | WebExtensionError |
+| WKWebExtensionErrorDomain | constant | WKWebExtension.h | WebExtensionError::domain() |
+| WKWebExtensionMatchPattern | interface | WKWebExtensionMatchPattern.h | WebExtensionMatchPattern |
+| WKWebExtensionMatchPatternError | enum | WKWebExtensionMatchPattern.h | WebExtensionMatchPatternError |
+| WKWebExtensionMatchPatternErrorDomain | constant | WKWebExtensionMatchPattern.h | WebExtensionMatchPatternError::domain() |
+| WKWebExtensionMatchPatternOptions | enum | WKWebExtensionMatchPattern.h | WebExtensionMatchPatternOptions |
+| WKWebExtensionMessagePort | interface | WKWebExtensionMessagePort.h | WebExtensionMessagePort |
+| WKWebExtensionMessagePortError | enum | WKWebExtensionMessagePort.h | WebExtensionMessagePortError |
+| WKWebExtensionMessagePortErrorDomain | constant | WKWebExtensionMessagePort.h | WebExtensionMessagePortError::domain() |
+| WKWebExtensionPermission | typealias | WKWebExtensionPermission.h | WebExtensionPermission |
+| WKWebExtensionPermissionActiveTab | constant | WKWebExtensionPermission.h | WebExtensionPermission::active_tab() |
+| WKWebExtensionPermissionAlarms | constant | WKWebExtensionPermission.h | WebExtensionPermission::alarms() |
+| WKWebExtensionPermissionClipboardWrite | constant | WKWebExtensionPermission.h | WebExtensionPermission::clipboard_write() |
+| WKWebExtensionPermissionContextMenus | constant | WKWebExtensionPermission.h | WebExtensionPermission::context_menus() |
+| WKWebExtensionPermissionCookies | constant | WKWebExtensionPermission.h | WebExtensionPermission::cookies() |
+| WKWebExtensionPermissionDeclarativeNetRequest | constant | WKWebExtensionPermission.h | WebExtensionPermission::declarative_net_request() |
+| WKWebExtensionPermissionDeclarativeNetRequestFeedback | constant | WKWebExtensionPermission.h | WebExtensionPermission::declarative_net_request_feedback() |
+| WKWebExtensionPermissionDeclarativeNetRequestWithHostAccess | constant | WKWebExtensionPermission.h | WebExtensionPermission::declarative_net_request_with_host_access() |
+| WKWebExtensionPermissionMenus | constant | WKWebExtensionPermission.h | WebExtensionPermission::menus() |
+| WKWebExtensionPermissionNativeMessaging | constant | WKWebExtensionPermission.h | WebExtensionPermission::native_messaging() |
+| WKWebExtensionPermissionScripting | constant | WKWebExtensionPermission.h | WebExtensionPermission::scripting() |
+| WKWebExtensionPermissionStorage | constant | WKWebExtensionPermission.h | WebExtensionPermission::storage() |
+| WKWebExtensionPermissionTabs | constant | WKWebExtensionPermission.h | WebExtensionPermission::tabs() |
+| WKWebExtensionPermissionUnlimitedStorage | constant | WKWebExtensionPermission.h | WebExtensionPermission::unlimited_storage() |
+| WKWebExtensionPermissionWebNavigation | constant | WKWebExtensionPermission.h | WebExtensionPermission::web_navigation() |
+| WKWebExtensionPermissionWebRequest | constant | WKWebExtensionPermission.h | WebExtensionPermission::web_request() |
+| WKWebExtensionTab | protocol | WKWebExtensionTab.h | WebExtensionTab |
+| WKWebExtensionTabChangedProperties | enum | WKWebExtensionTab.h | WebExtensionTabChangedProperties |
+| WKWebExtensionTabConfiguration | interface | WKWebExtensionTabConfiguration.h | WebExtensionTabConfiguration |
+| WKWebExtensionWindow | protocol | WKWebExtensionWindow.h | WebExtensionWindow |
+| WKWebExtensionWindowConfiguration | interface | WKWebExtensionWindowConfiguration.h | WebExtensionWindowConfiguration |
+| WKWebExtensionWindowState | enum | WKWebExtensionWindow.h | WebExtensionWindowState |
+| WKWebExtensionWindowType | enum | WKWebExtensionWindow.h | WebExtensionWindowType |
 | WKWebView | interface | WKWebView.h | WebView |
 | WKWebViewConfiguration | interface | WKWebViewConfiguration.h | WebViewConfiguration |
-| WKWebpagePreferences | interface | WKWebpagePreferences.h | WebViewConfiguration::{set_allows_content_javascript, allows_content_javascript} |
+| WKWebpagePreferences | interface | WKWebpagePreferences.h | Preferences, UpgradeToHTTPSPolicy |
+| WKWebpagePreferencesUpgradeToHTTPSPolicy | enum | WKWebpagePreferences.h | UpgradeToHTTPSPolicy |
 | WKWebsiteDataRecord | interface | WKWebsiteDataRecord.h | WebsiteDataRecord |
 | WKWebsiteDataTypeCookies | constant | WKWebsiteDataRecord.h | WebsiteDataType::cookies() |
 | WKWebsiteDataTypeDiskCache | constant | WKWebsiteDataRecord.h | WebsiteDataType::disk_cache() |
@@ -64,81 +135,11 @@ COVERAGE_PCT: 32.1%
 | WKDownloadRedirectPolicy | enum | WKDownloadDelegate.h | Raw framework enum is not surfaced as a typed Rust API. |
 | WKErrorCode | enum | WKError.h | Public error API does not expose typed WKError domain/codes. |
 | WKErrorDomain | constant | WKError.h | Public error API does not expose typed WKError domain/codes. |
-| WKFindConfiguration | interface | WKFindConfiguration.h | Find-in-page APIs are not wrapped. |
-| WKFindResult | interface | WKFindResult.h | Find-in-page APIs are not wrapped. |
-| WKFrameInfo | interface | WKFrameInfo.h | Only derived frame fields are surfaced; no public WKFrameInfo wrapper. |
-| WKNavigationAction | interface | WKNavigationAction.h | Delegate decisions do not expose raw navigation action/response objects. |
-| WKNavigationType | enum | WKNavigationAction.h | Raw framework enum is not surfaced as a typed Rust API. |
-| WKNavigationResponse | interface | WKNavigationResponse.h | Delegate decisions do not expose raw navigation action/response objects. |
 | WKOpenPanelParameters | interface | WKOpenPanelParameters.h | UI delegate internals are not exposed as public wrapper types. |
 | WKScriptMessageHandlerWithReply | protocol | WKScriptMessageHandlerWithReply.h | Reply-capable script message handlers are not supported. |
 | WKSecurityOrigin | interface | WKSecurityOrigin.h | UI delegate internals are not exposed as public wrapper types. |
 | WKMediaCaptureType | enum | WKUIDelegate.h | Raw framework enum is not surfaced as a typed Rust API. |
 | WKPermissionDecision | enum | WKUIDelegate.h | Raw framework enum is not surfaced as a typed Rust API. |
-| WKURLSchemeHandler | protocol | WKURLSchemeHandler.h | Custom URL scheme APIs are not wrapped. |
-| WKURLSchemeTask | protocol | WKURLSchemeTask.h | Custom URL scheme APIs are not wrapped. |
-| WKWebExtension | interface | WKWebExtension.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionError | enum | WKWebExtension.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionErrorDomain | constant | WKWebExtension.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionAction | interface | WKWebExtensionAction.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionCommand | interface | WKWebExtensionCommand.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionContext | interface | WKWebExtensionContext.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionContextDeniedPermissionMatchPatternsWereRemovedNotification | constant | WKWebExtensionContext.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionContextDeniedPermissionsWereRemovedNotification | constant | WKWebExtensionContext.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionContextError | enum | WKWebExtensionContext.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionContextErrorDomain | constant | WKWebExtensionContext.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionContextErrorsDidUpdateNotification | constant | WKWebExtensionContext.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionContextGrantedPermissionMatchPatternsWereRemovedNotification | constant | WKWebExtensionContext.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionContextGrantedPermissionsWereRemovedNotification | constant | WKWebExtensionContext.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionContextNotificationUserInfoKey | typealias | WKWebExtensionContext.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionContextNotificationUserInfoKeyMatchPatterns | constant | WKWebExtensionContext.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionContextNotificationUserInfoKeyPermissions | constant | WKWebExtensionContext.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionContextPermissionMatchPatternsWereDeniedNotification | constant | WKWebExtensionContext.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionContextPermissionMatchPatternsWereGrantedNotification | constant | WKWebExtensionContext.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionContextPermissionStatus | enum | WKWebExtensionContext.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionContextPermissionsWereDeniedNotification | constant | WKWebExtensionContext.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionContextPermissionsWereGrantedNotification | constant | WKWebExtensionContext.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionController | interface | WKWebExtensionController.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionControllerConfiguration | interface | WKWebExtensionControllerConfiguration.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionControllerDelegate | protocol | WKWebExtensionControllerDelegate.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionDataRecord | interface | WKWebExtensionDataRecord.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionDataRecordError | enum | WKWebExtensionDataRecord.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionDataRecordErrorDomain | constant | WKWebExtensionDataRecord.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionDataType | typealias | WKWebExtensionDataType.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionDataTypeLocal | constant | WKWebExtensionDataType.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionDataTypeSession | constant | WKWebExtensionDataType.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionDataTypeSynchronized | constant | WKWebExtensionDataType.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionMatchPattern | interface | WKWebExtensionMatchPattern.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionMatchPatternError | enum | WKWebExtensionMatchPattern.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionMatchPatternErrorDomain | constant | WKWebExtensionMatchPattern.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionMatchPatternOptions | enum | WKWebExtensionMatchPattern.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionMessagePort | interface | WKWebExtensionMessagePort.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionMessagePortError | enum | WKWebExtensionMessagePort.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionMessagePortErrorDomain | constant | WKWebExtensionMessagePort.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionPermission | typealias | WKWebExtensionPermission.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionPermissionActiveTab | constant | WKWebExtensionPermission.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionPermissionAlarms | constant | WKWebExtensionPermission.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionPermissionClipboardWrite | constant | WKWebExtensionPermission.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionPermissionContextMenus | constant | WKWebExtensionPermission.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionPermissionCookies | constant | WKWebExtensionPermission.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionPermissionDeclarativeNetRequest | constant | WKWebExtensionPermission.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionPermissionDeclarativeNetRequestFeedback | constant | WKWebExtensionPermission.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionPermissionDeclarativeNetRequestWithHostAccess | constant | WKWebExtensionPermission.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionPermissionMenus | constant | WKWebExtensionPermission.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionPermissionNativeMessaging | constant | WKWebExtensionPermission.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionPermissionScripting | constant | WKWebExtensionPermission.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionPermissionStorage | constant | WKWebExtensionPermission.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionPermissionTabs | constant | WKWebExtensionPermission.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionPermissionUnlimitedStorage | constant | WKWebExtensionPermission.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionPermissionWebNavigation | constant | WKWebExtensionPermission.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionPermissionWebRequest | constant | WKWebExtensionPermission.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionTab | protocol | WKWebExtensionTab.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionTabChangedProperties | enum | WKWebExtensionTab.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionTabConfiguration | interface | WKWebExtensionTabConfiguration.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionWindow | protocol | WKWebExtensionWindow.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionWindowState | enum | WKWebExtensionWindow.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionWindowType | enum | WKWebExtensionWindow.h | Web Extensions surface is entirely absent from the crate. |
-| WKWebExtensionWindowConfiguration | interface | WKWebExtensionWindowConfiguration.h | Web Extensions surface is entirely absent from the crate. |
 | WKFullscreenState | enum | WKWebView.h | Corresponding configuration/state enum is not wrapped. |
 | WKMediaCaptureState | enum | WKWebView.h | Corresponding configuration/state enum is not wrapped. |
 | WKMediaPlaybackState | enum | WKWebView.h | Corresponding configuration/state enum is not wrapped. |
@@ -147,7 +148,6 @@ COVERAGE_PCT: 32.1%
 | WKWebViewDataType | enum | WKWebView.h | Corresponding configuration/state enum is not wrapped. |
 | WKAudiovisualMediaTypes | enum | WKWebViewConfiguration.h | Corresponding configuration/state enum is not wrapped. |
 | WKUserInterfaceDirectionPolicy | enum | WKWebViewConfiguration.h | Corresponding configuration/state enum is not wrapped. |
-| WKWebpagePreferencesUpgradeToHTTPSPolicy | enum | WKWebpagePreferences.h | No wrapper for webpage preference policies. |
 | WKWindowFeatures | interface | WKWindowFeatures.h | UI delegate internals are not exposed as public wrapper types. |
 
 ## ⏭️ EXEMPT

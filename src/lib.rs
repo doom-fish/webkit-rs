@@ -13,6 +13,7 @@ pub mod content_rule_list_store;
 pub mod download;
 pub mod error;
 pub mod ffi;
+pub mod find;
 pub mod geometry;
 pub mod http_cookie_store;
 pub mod navigation;
@@ -23,7 +24,9 @@ pub mod preferences;
 pub mod script_message_handler;
 pub mod snapshot_configuration;
 pub mod ui_delegate;
+pub mod url_scheme;
 pub mod user_script;
+pub mod web_extension;
 pub mod webview;
 pub mod website_data_store;
 
@@ -32,19 +35,37 @@ pub use config::WebViewConfiguration;
 pub use content_rule_list_store::{ContentRuleList, ContentRuleListStore};
 pub use download::{Download, DownloadEvent};
 pub use error::WebKitError;
+pub use find::{FindConfiguration, FindResult};
 pub use geometry::Rect;
 pub use http_cookie_store::{Cookie, CookiePolicy, CookieStoreEvent, HttpCookieStore};
 pub use navigation::Navigation;
 pub use navigation_delegate::{
-    NavigationActionPolicy, NavigationDelegateConfig, NavigationEvent, NavigationEventKind,
-    NavigationResponsePolicy,
+    FrameInfo, NavigationAction, NavigationActionPolicy, NavigationDelegateConfig, NavigationEvent,
+    NavigationEventKind, NavigationResponse, NavigationResponsePolicy, NavigationType,
 };
 pub use pdf_configuration::PDFConfiguration;
-pub use preferences::{InactiveSchedulingPolicy, Preferences};
+pub use preferences::{InactiveSchedulingPolicy, Preferences, UpgradeToHTTPSPolicy};
 pub use script_message_handler::ScriptMessage;
 pub use snapshot_configuration::SnapshotConfiguration;
 pub use ui_delegate::{UIDelegateConfig, UIDelegateEvent};
+pub use url_scheme::{
+    UrlSchemeHandler, UrlSchemeRequest, UrlSchemeResponse, UrlSchemeTask,
+};
 pub use user_script::{InjectionTime, UserScript};
+pub use web_extension::{
+    NSErrorInfo, WebExtension, WebExtensionAction, WebExtensionCommand,
+    WebExtensionContext, WebExtensionContextError, WebExtensionContextNotificationUserInfoKey,
+    WebExtensionContextNotifications, WebExtensionContextPermissionStatus,
+    WebExtensionController, WebExtensionControllerConfiguration,
+    WebExtensionControllerConfigurationSummary, WebExtensionControllerDelegate,
+    WebExtensionDataRecord, WebExtensionDataRecordError, WebExtensionDataType,
+    WebExtensionError, WebExtensionMatchPattern, WebExtensionMatchPatternError,
+    WebExtensionMatchPatternOptions, WebExtensionMatchPatternSummary,
+    WebExtensionMessagePort, WebExtensionMessagePortError, WebExtensionPermission,
+    WebExtensionSummary, WebExtensionTab, WebExtensionTabChangedProperties,
+    WebExtensionTabConfiguration, WebExtensionWindow, WebExtensionWindowConfiguration,
+    WebExtensionWindowState, WebExtensionWindowType,
+};
 pub use webview::WebView;
 pub use website_data_store::{WebsiteDataRecord, WebsiteDataStore, WebsiteDataType};
 
@@ -54,19 +75,38 @@ pub mod prelude {
     pub use crate::content_rule_list_store::{ContentRuleList, ContentRuleListStore};
     pub use crate::download::{Download, DownloadEvent};
     pub use crate::error::WebKitError;
+    pub use crate::find::{FindConfiguration, FindResult};
     pub use crate::geometry::Rect;
     pub use crate::http_cookie_store::{Cookie, CookiePolicy, CookieStoreEvent, HttpCookieStore};
     pub use crate::navigation::Navigation;
     pub use crate::navigation_delegate::{
-        NavigationActionPolicy, NavigationDelegateConfig, NavigationEvent, NavigationEventKind,
-        NavigationResponsePolicy,
+        FrameInfo, NavigationAction, NavigationActionPolicy, NavigationDelegateConfig,
+        NavigationEvent, NavigationEventKind, NavigationResponse, NavigationResponsePolicy,
+        NavigationType,
     };
     pub use crate::pdf_configuration::PDFConfiguration;
-    pub use crate::preferences::{InactiveSchedulingPolicy, Preferences};
+    pub use crate::preferences::{InactiveSchedulingPolicy, Preferences, UpgradeToHTTPSPolicy};
     pub use crate::script_message_handler::ScriptMessage;
     pub use crate::snapshot_configuration::SnapshotConfiguration;
     pub use crate::ui_delegate::{UIDelegateConfig, UIDelegateEvent};
+    pub use crate::url_scheme::{
+        UrlSchemeHandler, UrlSchemeRequest, UrlSchemeResponse, UrlSchemeTask,
+    };
     pub use crate::user_script::{InjectionTime, UserScript};
+    pub use crate::web_extension::{
+        NSErrorInfo, WebExtension, WebExtensionAction, WebExtensionCommand,
+        WebExtensionContext, WebExtensionContextError, WebExtensionContextNotificationUserInfoKey,
+        WebExtensionContextNotifications, WebExtensionContextPermissionStatus,
+        WebExtensionController, WebExtensionControllerConfiguration,
+        WebExtensionControllerConfigurationSummary, WebExtensionControllerDelegate,
+        WebExtensionDataRecord, WebExtensionDataRecordError, WebExtensionDataType,
+        WebExtensionError, WebExtensionMatchPattern, WebExtensionMatchPatternError,
+        WebExtensionMatchPatternOptions, WebExtensionMatchPatternSummary,
+        WebExtensionMessagePort, WebExtensionMessagePortError, WebExtensionPermission,
+        WebExtensionSummary, WebExtensionTab, WebExtensionTabChangedProperties,
+        WebExtensionTabConfiguration, WebExtensionWindow, WebExtensionWindowConfiguration,
+        WebExtensionWindowState, WebExtensionWindowType,
+    };
     pub use crate::webview::WebView;
     pub use crate::website_data_store::{WebsiteDataRecord, WebsiteDataStore, WebsiteDataType};
 }

@@ -8,10 +8,13 @@ use crate::config::WebViewConfiguration;
 use crate::download::Download;
 use crate::error::WebKitError;
 use crate::ffi::{self, WKMsgCallback, WKNavCallback};
+use crate::find::{FindConfiguration, FindResult};
 use crate::navigation::Navigation;
 use crate::navigation_delegate::{NavigationDelegateConfig, NavigationEvent};
 use crate::pdf_configuration::PDFConfiguration;
-use crate::private::{maybe_take_error, take_bytes, take_json_or_default, take_string, to_cstring};
+use crate::private::{
+    maybe_take_error, take_bytes, take_json_or_default, take_string, to_cstring, to_json_cstring,
+};
 use crate::script_message_handler::ScriptMessage;
 use crate::snapshot_configuration::SnapshotConfiguration;
 use crate::ui_delegate::{UIDelegateConfig, UIDelegateEvent};
@@ -514,6 +517,42 @@ impl WebView {
             return Err(error);
         }
         Ok(unsafe { take_string(out_result) })
+    }
+
+    /// Search the current page using the default `WKFindConfiguration` values.
+    ///
+    /// # Errors
+    /// Returns an error if the find-in-page request fails.
+    pub fn find_string(&self, query: &str) -> Result<FindResult, WebKitError> {
+        self.find_string_with_configuration(query, &FindConfiguration::default())
+    }
+
+    /// Search the current page using a custom find configuration.
+    ///
+    /// # Errors
+    /// Returns an error if the find-in-page request fails.
+    pub fn find_string_with_configuration(
+        &self,
+        query: &str,
+        configuration: &FindConfiguration,
+    ) -> Result<FindResult, WebKitError> {
+        let c_query = to_cstring(query);
+        let configuration_json = to_json_cstring(configuration);
+        let mut out_result: *mut c_char = ptr::null_mut();
+        let mut out_err: *mut c_char = ptr::null_mut();
+        let status = unsafe {
+            ffi::wk_webview_find_string(
+                self.ptr,
+                c_query.as_ptr(),
+                configuration_json.as_ptr(),
+                &mut out_result,
+                &mut out_err,
+            )
+        };
+        if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
+            return Err(error);
+        }
+        Ok(unsafe { take_json_or_default(out_result) })
     }
 
     /// Take a snapshot of the current page and return PNG bytes.

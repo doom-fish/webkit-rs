@@ -30,6 +30,15 @@ impl WebViewConfiguration {
     }
 
     #[must_use]
+    pub(crate) fn from_ptr(ptr: *mut c_void) -> Option<Self> {
+        if ptr.is_null() {
+            None
+        } else {
+            Some(Self(ptr))
+        }
+    }
+
+    #[must_use]
     pub(crate) fn as_ptr(&self) -> *mut c_void {
         self.0
     }

@@ -9,6 +9,37 @@ pub enum InactiveSchedulingPolicy {
     None = 2,
 }
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[repr(i32)]
+pub enum UpgradeToHTTPSPolicy {
+    #[default]
+    #[serde(rename = "keepAsRequested")]
+    KeepAsRequested = 0,
+    #[serde(rename = "automaticFallbackToHTTP")]
+    AutomaticFallbackToHttp = 1,
+    #[serde(rename = "userMediatedFallbackToHTTP")]
+    UserMediatedFallbackToHttp = 2,
+    #[serde(rename = "errorOnFailure")]
+    ErrorOnFailure = 3,
+}
+
+impl UpgradeToHTTPSPolicy {
+    #[must_use]
+    pub const fn as_raw(self) -> i32 {
+        self as i32
+    }
+
+    #[must_use]
+    pub const fn from_raw(raw: i32) -> Self {
+        match raw {
+            1 => Self::AutomaticFallbackToHttp,
+            2 => Self::UserMediatedFallbackToHttp,
+            3 => Self::ErrorOnFailure,
+            _ => Self::KeepAsRequested,
+        }
+    }
+}
+
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -23,6 +54,8 @@ pub struct Preferences {
     pub element_fullscreen_enabled: bool,
     pub inactive_scheduling_policy: InactiveSchedulingPolicy,
     pub java_script_enabled: bool,
+    #[serde(default, rename = "upgradeToHTTPSPolicy")]
+    pub upgrade_to_https_policy: UpgradeToHTTPSPolicy,
 }
 
 impl Default for Preferences {
@@ -38,6 +71,7 @@ impl Default for Preferences {
             element_fullscreen_enabled: false,
             inactive_scheduling_policy: InactiveSchedulingPolicy::Suspend,
             java_script_enabled: true,
+            upgrade_to_https_policy: UpgradeToHTTPSPolicy::KeepAsRequested,
         }
     }
 }
