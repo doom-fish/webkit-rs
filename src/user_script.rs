@@ -19,6 +19,7 @@ pub struct UserScript {
     pub source: String,
     pub injection_time: InjectionTime,
     pub main_frame_only: bool,
+    pub content_world: Option<String>,
 }
 
 impl UserScript {
@@ -28,6 +29,7 @@ impl UserScript {
             source: source.into(),
             injection_time: InjectionTime::AtDocumentEnd,
             main_frame_only: true,
+            content_world: None,
         }
     }
 
@@ -40,6 +42,12 @@ impl UserScript {
     #[must_use]
     pub fn with_main_frame_only(mut self, value: bool) -> Self {
         self.main_frame_only = value;
+        self
+    }
+
+    #[must_use]
+    pub fn with_content_world(mut self, name: impl Into<String>) -> Self {
+        self.content_world = Some(name.into());
         self
     }
 }

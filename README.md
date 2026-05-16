@@ -1,8 +1,8 @@
 # webkit-rs
 
-Safe Rust bindings for Apple's `WKWebView` (WebKit) APIs on macOS.
+Safe Rust bindings for Apple's `WKWebView` APIs on macOS.
 
-> **Status:** v0.1.0 — headless/offscreen web view, HTML/URL loading, JavaScript evaluation, user scripts, script message handlers, navigation delegate, and PNG snapshot support.
+> **Status:** v0.2.0 — expanded Swift-bridge coverage for `WKWebView`, `WKWebViewConfiguration`, `WKWebsiteDataStore`, `WKHTTPCookieStore`, `WKContentRuleListStore`, `WKPreferences`, delegates, downloads, snapshots, and PDF generation. See [`COVERAGE.md`](COVERAGE.md) for the audited SDK matrix.
 
 ## Quick start
 
@@ -19,7 +19,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("message [{name}]: {body}");
     });
 
-    view.load_html("<html><body><script>window.webkit.messageHandlers.bridge.postMessage('hi');</script></body></html>", None)?;
+    view.load_html(
+        "<html><body><script>window.webkit.messageHandlers.bridge.postMessage('hi');</script></body></html>",
+        None,
+    )?;
     let title = view.evaluate_javascript("document.title")?;
     println!("title: {title}");
 
@@ -28,16 +31,51 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-## Features
+## Covered areas
 
-- `WebViewConfiguration` — user content controller, data store, user agent, JavaScript toggle, AirPlay
-- `WebView::new_offscreen()` / `WebView::with_config()` — headless `WKWebView`
-- `load_url` / `load_html` — blocking navigation
-- `evaluate_javascript` / `call_async_javascript` — blocking JS evaluation
-- `set_navigation_handler` — `didFinish`, `didFail`, `decidePolicyForAction` events
-- `set_message_handler` — `window.webkit.messageHandlers.<name>.postMessage(...)` callbacks
-- `take_snapshot_png` — returns PNG `Vec<u8>`
-- `pump_run_loop` — drain run-loop events
+- `WKWebView`
+  - offscreen construction
+  - HTML / URL / file / raw-data loading
+  - synchronous JavaScript evaluation and async JavaScript calls
+  - navigation / reload / stop / progress / history queries
+  - custom user agent, page zoom, media type, inspectable state
+  - PNG snapshots, PDF output, and downloads
+- `WKWebViewConfiguration`
+  - application name, AirPlay, content JavaScript toggle
+  - `WKPreferences` round-tripping
+  - `WKWebsiteDataStore` assignment and retrieval
+  - user scripts, script-message handler registration, content rule lists
+- `WKWebsiteDataStore`
+  - persistent / non-persistent stores
+  - data-record fetch and removal
+  - import / export helpers for macOS 26+
+  - data-store identifier APIs for macOS 14+
+  - cookie-store access
+- `WKHTTPCookieStore`
+  - get / set / delete cookies
+  - observer-style event draining
+  - cookie policy APIs for macOS 14+
+- `WKContentRuleListStore`
+  - default and custom stores
+  - compile / look up / remove rule lists
+  - list available identifiers
+- Delegates and events
+  - `WKNavigationDelegate`
+  - `WKUIDelegate`
+  - `WKScriptMessageHandler`
+- Supporting types
+  - `WKUserScript`
+  - `WKNavigation`
+  - `WKDownload`
+  - `WKBackForwardList`
+  - `WKSnapshotConfiguration`
+  - `WKPDFConfiguration`
+
+## Examples and tests
+
+- `examples/` contains 15 numbered, headless-safe examples covering every requested logical area.
+- `tests/` contains 15 area-specific test files.
+- Live `WKWebView` smoke tests that require the process main thread are represented as runnable examples and as `#[ignore]` integration tests with notes.
 
 ## Requirements
 

@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.2.0] - 2026-05-16
+
+### Added
+
+- Expanded the Swift bridge into logical-area files mirroring the `screencapturekit-rs` pattern.
+- Added `WKWebsiteDataStore` wrappers with persistent / non-persistent stores, record fetch / removal, cookie-store access, and macOS 14+/26+ identifier/import/export helpers.
+- Added `WKHTTPCookieStore` wrappers for fetching, setting, deleting, observing, and policy management.
+- Added `WKContentRuleListStore` and `WKContentRuleList` wrappers plus configuration integration for compiled rule lists.
+- Added `WKPreferences` round-tripping through `WebViewConfiguration`.
+- Added `WKNavigation`, `WKDownload`, `WKBackForwardList`, `WKSnapshotConfiguration`, and `WKPDFConfiguration` support to the safe Rust API.
+- Added typed navigation, UI-delegate, and script-message event models.
+- Added 14 new numbered examples (15 total) covering every requested logical area.
+- Added 15 area-specific integration test files.
+- Added `COVERAGE.md` with the audited SDK matrix for the requested WebKit headers.
+
+### Changed
+
+- Bumped the crate version from `0.1.0` to `0.2.0`.
+- Refreshed the README to document the widened WebKit surface and validation strategy.
+
 ## [0.1.0] - 2026-05-16
 
 ### Added
