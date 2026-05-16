@@ -1,0 +1,56 @@
+[package]
+name = "webkit"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+homepage = "https://github.com/doom-fish/webkit-rs"
+repository = "https://github.com/doom-fish/webkit-rs"
+description = "Safe Rust bindings for WebKit — Apple's WKWebView APIs on macOS"
+authors = ["Per Johansson <per@doom.fish>"]
+keywords = ["webkit", "webview", "macos", "apple", "wkwebview"]
+categories = ["api-bindings", "os::macos-apis", "web-programming"]
+rust-version = "1.76"
+readme = "README.md"
+build = "build.rs"
+include = [
+    "src/**/*",
+    "swift-bridge/Package.swift",
+    "swift-bridge/Sources/**/*",
+    "examples/**/*",
+    "build.rs",
+    "Cargo.toml",
+    "README.md",
+    "LICENSE-*",
+    "CHANGELOG.md",
+]
+
+[lints.rust]
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+cargo = { level = "warn", priority = -1 }
+
+[lib]
+name = "webkit"
+crate-type = ["lib"]
+
+[dependencies]
+apple-cf = { version = ">=0.2, <0.6", features = ["cg"] }
+libc = "0.2"
+
+[package.metadata.docs.rs]
+all-features = true
+default-target = "aarch64-apple-darwin"
+targets = ["aarch64-apple-darwin", "x86_64-apple-darwin"]
+rustdoc-args = ["--cfg", "docsrs"]
+
+[badges]
+maintenance = { status = "actively-developed" }
+
+[[example]]
+name = "01_load_eval"
+
+[profile.release]
+debug = "full"
+strip = "none"
