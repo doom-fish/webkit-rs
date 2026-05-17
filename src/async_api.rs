@@ -150,9 +150,14 @@ macro_rules! unit_future {
     };
 }
 
+// SAFETY: Called by the Swift bridge exactly once per completion context.
+// `error` and `result` are either null or valid C strings for the duration of
+// this call. `ctx` is the raw pointer from `AsyncCompletion::create()`.
 unsafe extern "C" fn string_cb(result: *const c_char, error: *const c_char, ctx: *mut c_void) {
     if !error.is_null() {
+        // SAFETY: `error` is non-null and points to a valid C string.
         let msg = unsafe { error_from_cstr(error) };
+        // SAFETY: `ctx` is a valid completion context, called exactly once.
         unsafe { AsyncCompletion::<String>::complete_err(ctx, msg) };
         return;
     }
@@ -160,11 +165,17 @@ unsafe extern "C" fn string_cb(result: *const c_char, error: *const c_char, ctx:
     let value = if result.is_null() {
         String::new()
     } else {
+        // SAFETY: `result` is non-null and points to a valid C string.
         unsafe { CStr::from_ptr(result).to_string_lossy().into_owned() }
     };
+    // SAFETY: `ctx` is a valid completion context, called exactly once.
     unsafe { AsyncCompletion::complete_ok(ctx, value) };
 }
 
+// SAFETY: Called by the Swift bridge exactly once per completion context.
+// `error` is either null or a valid C string. `bytes`/`len` describe a bridge-
+// owned buffer valid for the duration of this call. `ctx` is the raw pointer
+// from `AsyncCompletion::create()`.
 unsafe extern "C" fn bytes_cb(
     bytes: *const u8,
     len: usize,
@@ -172,7 +183,9 @@ unsafe extern "C" fn bytes_cb(
     ctx: *mut c_void,
 ) {
     if !error.is_null() {
+        // SAFETY: `error` is non-null and points to a valid C string.
         let msg = unsafe { error_from_cstr(error) };
+        // SAFETY: `ctx` is a valid completion context, called exactly once.
         unsafe { AsyncCompletion::<Vec<u8>>::complete_err(ctx, msg) };
         return;
     }
@@ -180,25 +193,40 @@ unsafe extern "C" fn bytes_cb(
     let value = if bytes.is_null() || len == 0 {
         Vec::new()
     } else {
+        // SAFETY: `bytes` is non-null and `len` bytes are valid for this call.
         unsafe { std::slice::from_raw_parts(bytes, len).to_vec() }
     };
+    // SAFETY: `ctx` is a valid completion context, called exactly once.
     unsafe { AsyncCompletion::complete_ok(ctx, value) };
 }
 
+// SAFETY: Called by the Swift bridge exactly once per completion context.
+// `error` is either null or a valid C string. `ctx` is the raw pointer from
+// `AsyncCompletion::create()`.
 unsafe extern "C" fn unit_cb(_result: *const c_char, error: *const c_char, ctx: *mut c_void) {
     if error.is_null() {
+        // SAFETY: `ctx` is a valid completion context, called exactly once.
         unsafe { AsyncCompletion::complete_ok(ctx, ()) };
     } else {
+        // SAFETY: `error` is non-null and points to a valid C string.
         let msg = unsafe { error_from_cstr(error) };
+        // SAFETY: `ctx` is a valid completion context, called exactly once.
         unsafe { AsyncCompletion::<()>::complete_err(ctx, msg) };
     }
 }
 
+// SAFETY: Called by the Swift bridge exactly once per completion context.
+// `result` is either null or a valid Objective-C object pointer managed by the
+// bridge for the duration of this call. `error` is either null or a valid C
+// string. `ctx` is the raw pointer from `AsyncCompletion::create()`.
 unsafe extern "C" fn rule_list_cb(result: *mut c_void, error: *const c_char, ctx: *mut c_void) {
     if !error.is_null() {
+        // SAFETY: `error` is non-null and points to a valid C string.
         let msg = unsafe { error_from_cstr(error) };
+        // SAFETY: `ctx` is a valid completion context, called exactly once.
         unsafe { AsyncCompletion::<*mut c_void>::complete_err(ctx, msg) };
     } else if result.is_null() {
+        // SAFETY: `ctx` is a valid completion context, called exactly once.
         unsafe {
             AsyncCompletion::<*mut c_void>::complete_err(
                 ctx,
@@ -206,10 +234,14 @@ unsafe extern "C" fn rule_list_cb(result: *mut c_void, error: *const c_char, ctx
             );
         }
     } else {
+        // SAFETY: `ctx` is a valid completion context, called exactly once.
         unsafe { AsyncCompletion::complete_ok(ctx, result) };
     }
 }
 
+// SAFETY: Called by the Swift bridge exactly once per completion context.
+// `error` is either null or a valid C string. `ctx` is the raw pointer from
+// `AsyncCompletion::create()`. Byte arguments are ignored.
 unsafe extern "C" fn bytes_cb_discard(
     _bytes: *const u8,
     _len: usize,
@@ -217,9 +249,12 @@ unsafe extern "C" fn bytes_cb_discard(
     ctx: *mut c_void,
 ) {
     if error.is_null() {
+        // SAFETY: `ctx` is a valid completion context, called exactly once.
         unsafe { AsyncCompletion::complete_ok(ctx, ()) };
     } else {
+        // SAFETY: `error` is non-null and points to a valid C string.
         let msg = unsafe { error_from_cstr(error) };
+        // SAFETY: `ctx` is a valid completion context, called exactly once.
         unsafe { AsyncCompletion::<()>::complete_err(ctx, msg) };
     }
 }

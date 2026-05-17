@@ -158,18 +158,28 @@ fn malloc_c_string(value: &str) -> *mut c_char {
     ptr
 }
 
+// SAFETY: Called by the Swift bridge on the main thread. `user_info` is either
+// null or a shared reference to `NavCallbackHolder` whose lifetime is managed
+// by the enclosing `WebView`. `event_json` is a bridge-owned null-terminated C
+// string valid for the duration of this call.
 unsafe extern "C" fn nav_trampoline(user_info: *mut c_void, event_json: *const c_char) {
     if user_info.is_null() || event_json.is_null() {
         return;
     }
 
-    let holder = &*(user_info.cast::<NavCallbackHolder>());
-    let json = CStr::from_ptr(event_json).to_string_lossy();
+    // SAFETY: `user_info` is non-null and points to a live `NavCallbackHolder`.
+    let holder = unsafe { &*(user_info.cast::<NavCallbackHolder>()) };
+    // SAFETY: `event_json` is non-null and a valid C string for this call.
+    let json = unsafe { CStr::from_ptr(event_json) }.to_string_lossy();
     let event = serde_json::from_str::<NavigationEvent>(&json)
         .unwrap_or_else(|_| NavigationEvent::unknown());
-    (holder.f)(event);
+    // Catch panics from user-supplied closure to prevent UB across the C ABI.
+    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (holder.f)(event)));
 }
 
+// SAFETY: Called by the Swift bridge on the main thread. `user_info` is either
+// null or a shared reference to `MsgCallbackHolder` managed by the enclosing
+// `WebView`. String pointers are bridge-owned and valid for this call.
 unsafe extern "C" fn msg_trampoline(
     user_info: *mut c_void,
     handler_name: *const c_char,
@@ -179,20 +189,28 @@ unsafe extern "C" fn msg_trampoline(
         return;
     }
 
-    let holder = &*(user_info.cast::<MsgCallbackHolder>());
+    // SAFETY: `user_info` is non-null and points to a live `MsgCallbackHolder`.
+    let holder = unsafe { &*(user_info.cast::<MsgCallbackHolder>()) };
     let name = if handler_name.is_null() {
         ""
     } else {
-        CStr::from_ptr(handler_name).to_str().unwrap_or("")
+        // SAFETY: `handler_name` is non-null and a valid C string.
+        unsafe { CStr::from_ptr(handler_name) }.to_str().unwrap_or("")
     };
     let body_str = if body.is_null() {
         ""
     } else {
-        CStr::from_ptr(body).to_str().unwrap_or("")
+        // SAFETY: `body` is non-null and a valid C string.
+        unsafe { CStr::from_ptr(body) }.to_str().unwrap_or("")
     };
-    (holder.f)(name, body_str);
+    // Catch panics from user-supplied closure to prevent UB across the C ABI.
+    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (holder.f)(name, body_str)));
 }
 
+// SAFETY: Called by the Swift bridge on the main thread. `user_info` is either
+// null or a shared reference to `ReplyMsgCallbackHolder` managed by the
+// enclosing `WebView`. String pointers are bridge-owned and valid for this
+// call. `out_reply` and `out_err` are writable bridge-owned pointers or null.
 unsafe extern "C" fn msg_reply_trampoline(
     user_info: *mut c_void,
     handler_name: *const c_char,
@@ -202,49 +220,66 @@ unsafe extern "C" fn msg_reply_trampoline(
 ) -> i32 {
     if user_info.is_null() {
         if !out_err.is_null() {
-            *out_err = malloc_c_string("missing script message reply handler");
+            // SAFETY: `out_err` is non-null and writable.
+            unsafe { *out_err = malloc_c_string("missing script message reply handler") };
         }
         return ffi::status::INVALID_ARGUMENT;
     }
 
     if !out_reply.is_null() {
-        *out_reply = ptr::null_mut();
+        // SAFETY: `out_reply` is non-null and writable.
+        unsafe { *out_reply = ptr::null_mut() };
     }
     if !out_err.is_null() {
-        *out_err = ptr::null_mut();
+        // SAFETY: `out_err` is non-null and writable.
+        unsafe { *out_err = ptr::null_mut() };
     }
 
-    let holder = &*(user_info.cast::<ReplyMsgCallbackHolder>());
+    // SAFETY: `user_info` is non-null and points to a live `ReplyMsgCallbackHolder`.
+    let holder = unsafe { &*(user_info.cast::<ReplyMsgCallbackHolder>()) };
     let name = if handler_name.is_null() {
         ""
     } else {
-        CStr::from_ptr(handler_name).to_str().unwrap_or("")
+        // SAFETY: `handler_name` is non-null and a valid C string.
+        unsafe { CStr::from_ptr(handler_name) }.to_str().unwrap_or("")
     };
     let body_str = if body.is_null() {
         ""
     } else {
-        CStr::from_ptr(body).to_str().unwrap_or("")
+        // SAFETY: `body` is non-null and a valid C string.
+        unsafe { CStr::from_ptr(body) }.to_str().unwrap_or("")
     };
 
-    match (holder.f)(name, body_str) {
-        Ok(Some(reply)) => match serde_json::to_string(&reply) {
+    // Catch panics from user-supplied closure to prevent UB across the C ABI.
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (holder.f)(name, body_str))) {
+        Err(_) => {
+            if !out_err.is_null() {
+                // SAFETY: `out_err` is non-null and writable.
+                unsafe { *out_err = malloc_c_string("script message reply handler panicked") };
+            }
+            ffi::status::FRAMEWORK_ERROR
+        }
+        Ok(Ok(Some(reply))) => match serde_json::to_string(&reply) {
             Ok(json) => {
                 if !out_reply.is_null() {
-                    *out_reply = malloc_c_string(&json);
+                    // SAFETY: `out_reply` is non-null and writable.
+                    unsafe { *out_reply = malloc_c_string(&json) };
                 }
                 ffi::status::OK
             }
             Err(error) => {
                 if !out_err.is_null() {
-                    *out_err = malloc_c_string(&error.to_string());
+                    // SAFETY: `out_err` is non-null and writable.
+                    unsafe { *out_err = malloc_c_string(&error.to_string()) };
                 }
                 ffi::status::FRAMEWORK_ERROR
             }
         },
-        Ok(None) => ffi::status::OK,
-        Err(error) => {
+        Ok(Ok(None)) => ffi::status::OK,
+        Ok(Err(error)) => {
             if !out_err.is_null() {
-                *out_err = malloc_c_string(&error.to_string());
+                // SAFETY: `out_err` is non-null and writable.
+                unsafe { *out_err = malloc_c_string(&error.to_string()) };
             }
             status_from_error(&error)
         }

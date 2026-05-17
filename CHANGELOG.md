@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.3.2] - 2026-06-05
+
+### Fixed
+
+- `webview.rs`: Added `std::panic::catch_unwind` to `nav_trampoline`,
+  `msg_trampoline`, and `msg_reply_trampoline`. User-supplied navigation,
+  message, and reply-message closures could previously panic across the C ABI
+  boundary (undefined behaviour); panics are now caught and swallowed with a
+  `FRAMEWORK_ERROR` status returned to the bridge for the reply trampoline.
+- `url_scheme.rs`: Added `std::panic::catch_unwind` to
+  `url_scheme_start_trampoline` and `url_scheme_stop_trampoline`. User-supplied
+  `UrlSchemeHandler` implementations could previously panic across the C ABI.
+- Added `// SAFETY:` comments to all explicit `unsafe { }` blocks in
+  `async_api.rs` (`string_cb`, `bytes_cb`, `unit_cb`, `rule_list_cb`,
+  `bytes_cb_discard`) and in `url_scheme.rs`
+  (`url_scheme_{start,stop}_trampoline`, `wk_rust_release_url_scheme_handler`).
+  Also added function-level SAFETY headers and inner-block annotations to all
+  three trampolines in `webview.rs`.
+- `Cargo.toml`: Tightened the `doom-fish-utils` version range from `"0.1"` to
+  `">=0.1, <0.3"` to allow the next minor release while blocking breaking
+  changes.
+
 ## [0.3.1] - 2026-06-05
 
 ### Changed

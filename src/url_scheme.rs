@@ -170,6 +170,11 @@ struct UrlSchemeHandlerHolder {
     handler: Box<dyn UrlSchemeHandler>,
 }
 
+// SAFETY: Called by the Swift bridge when a URL scheme task starts.
+// `user_info` is the `Arc<UrlSchemeHandlerHolder>` raw pointer stored in the
+// configuration; we reconstitute a clone without consuming the original so the
+// bridge retains ownership. `task` and `request_json` are bridge-owned and
+// valid for the duration of this call.
 unsafe extern "C" fn url_scheme_start_trampoline(
     user_info: *mut c_void,
     task: *mut c_void,
@@ -179,14 +184,21 @@ unsafe extern "C" fn url_scheme_start_trampoline(
         return;
     }
 
+    // SAFETY: `user_info` is the raw pointer from `Arc::into_raw`; we clone
+    // before putting it back to avoid consuming the bridge's reference.
     let holder = unsafe { Arc::<UrlSchemeHandlerHolder>::from_raw(user_info.cast()) };
     let cloned = Arc::clone(&holder);
     let _ = Arc::into_raw(holder);
     if let Some(task) = UrlSchemeTask::from_ptr_and_json(task, request_json) {
-        cloned.handler.start(task);
+        // Catch panics from user-supplied handler to prevent UB across C ABI.
+        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            cloned.handler.start(task);
+        }));
     }
 }
 
+// SAFETY: Called by the Swift bridge when a URL scheme task is stopped.
+// Same pointer ownership invariants as `url_scheme_start_trampoline`.
 unsafe extern "C" fn url_scheme_stop_trampoline(
     user_info: *mut c_void,
     task: *mut c_void,
@@ -196,11 +208,16 @@ unsafe extern "C" fn url_scheme_stop_trampoline(
         return;
     }
 
+    // SAFETY: `user_info` is the raw pointer from `Arc::into_raw`; we clone
+    // before putting it back to avoid consuming the bridge's reference.
     let holder = unsafe { Arc::<UrlSchemeHandlerHolder>::from_raw(user_info.cast()) };
     let cloned = Arc::clone(&holder);
     let _ = Arc::into_raw(holder);
     if let Some(task) = UrlSchemeTask::from_ptr_and_json(task, request_json) {
-        cloned.handler.stop(task);
+        // Catch panics from user-supplied handler to prevent UB across C ABI.
+        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            cloned.handler.stop(task);
+        }));
     }
 }
 
@@ -210,6 +227,9 @@ pub extern "C" fn wk_rust_release_url_scheme_handler(user_info: *mut c_void) {
     if user_info.is_null() {
         return;
     }
+    // SAFETY: `user_info` is the raw pointer from `Arc::into_raw` stored in the
+    // Swift bridge configuration object. This function is called exactly once,
+    // when the bridge releases the handler, so we take ownership and drop it.
     unsafe {
         drop(Arc::<UrlSchemeHandlerHolder>::from_raw(user_info.cast()));
     }
