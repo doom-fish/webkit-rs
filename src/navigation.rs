@@ -28,7 +28,9 @@ impl Navigation {
 
 impl core::fmt::Debug for Navigation {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("Navigation").field("id", &self.id()).finish()
+        f.debug_struct("Navigation")
+            .field("id", &self.id())
+            .finish()
     }
 }
 

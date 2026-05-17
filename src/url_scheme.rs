@@ -99,7 +99,11 @@ impl UrlSchemeTask {
         let response_json = to_json_cstring(response);
         let mut out_err = ptr::null_mut();
         let status = unsafe {
-            ffi::wk_url_scheme_task_send_response_json(self.ptr, response_json.as_ptr(), &mut out_err)
+            ffi::wk_url_scheme_task_send_response_json(
+                self.ptr,
+                response_json.as_ptr(),
+                &mut out_err,
+            )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);
@@ -130,9 +134,8 @@ impl UrlSchemeTask {
     pub fn did_fail(&self, message: &str) -> Result<(), WebKitError> {
         let c_message = to_cstring(message);
         let mut out_err = ptr::null_mut();
-        let status = unsafe {
-            ffi::wk_url_scheme_task_fail(self.ptr, c_message.as_ptr(), &mut out_err)
-        };
+        let status =
+            unsafe { ffi::wk_url_scheme_task_fail(self.ptr, c_message.as_ptr(), &mut out_err) };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);
         }

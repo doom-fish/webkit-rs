@@ -10,13 +10,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("navigation event: {:?} {}", event.kind, event.url);
     });
 
-    common::load_html(&view, "<p>navigation delegate</p>", "https://nav-delegate.test/")?;
+    common::load_html(
+        &view,
+        "<p>navigation delegate</p>",
+        "https://nav-delegate.test/",
+    )?;
     let events = view.drain_navigation_events();
-    assert!(
-        events
-            .iter()
-            .any(|event| matches!(event.kind, NavigationEventKind::DidFinish))
-    );
+    assert!(events
+        .iter()
+        .any(|event| matches!(event.kind, NavigationEventKind::DidFinish)));
 
     let action_event = events
         .iter()
@@ -27,7 +29,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .as_ref()
         .expect("expected typed navigation action details");
     assert!(action.source_frame.main_frame);
-    assert!(matches!(action.navigation_type, NavigationType::Other | NavigationType::LinkActivated));
+    assert!(matches!(
+        action.navigation_type,
+        NavigationType::Other | NavigationType::LinkActivated
+    ));
 
     if let Some(response_event) = events
         .iter()

@@ -44,18 +44,28 @@ fn navigation_event_deserializes_typed_action_details() -> Result<(), Box<dyn st
         }"#,
     )?;
 
-    assert_eq!(event.navigation_type_enum(), Some(NavigationType::LinkActivated));
+    assert_eq!(
+        event.navigation_type_enum(),
+        Some(NavigationType::LinkActivated)
+    );
     let action = event.navigation_action.expect("expected navigation action");
     assert_eq!(action.navigation_type, NavigationType::LinkActivated);
     assert_eq!(action.request_url, "https://example.test/");
     assert!(action.source_frame.main_frame);
-    assert_eq!(action.source_frame.security_origin_host.as_deref(), Some("example.test"));
-    assert_eq!(action.request_headers.get("Accept").map(String::as_str), Some("text/html"));
+    assert_eq!(
+        action.source_frame.security_origin_host.as_deref(),
+        Some("example.test")
+    );
+    assert_eq!(
+        action.request_headers.get("Accept").map(String::as_str),
+        Some("text/html")
+    );
     Ok(())
 }
 
 #[test]
-fn navigation_event_deserializes_typed_response_details() -> Result<(), Box<dyn std::error::Error>> {
+fn navigation_event_deserializes_typed_response_details() -> Result<(), Box<dyn std::error::Error>>
+{
     let event: NavigationEvent = serde_json::from_str(
         r#"{
             "kind":"decidePolicyForResponse",
@@ -77,10 +87,15 @@ fn navigation_event_deserializes_typed_response_details() -> Result<(), Box<dyn 
         }"#,
     )?;
 
-    let response = event.navigation_response.expect("expected navigation response");
+    let response = event
+        .navigation_response
+        .expect("expected navigation response");
     assert!(response.for_main_frame);
     assert_eq!(response.mime_type.as_deref(), Some("text/html"));
     assert_eq!(response.status_code, Some(200));
-    assert_eq!(response.headers.get("Content-Type").map(String::as_str), Some("text/html"));
+    assert_eq!(
+        response.headers.get("Content-Type").map(String::as_str),
+        Some("text/html")
+    );
     Ok(())
 }

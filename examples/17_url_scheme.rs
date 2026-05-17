@@ -9,7 +9,8 @@ impl UrlSchemeHandler for ExampleSchemeHandler {
         let response = UrlSchemeResponse::new(task.request().url.clone(), "text/html")
             .with_text_encoding_name("utf-8")
             .with_header("Cache-Control", "no-store");
-        let body = br"<!doctype html><html><body id='custom'>hello from custom scheme</body></html>";
+        let body =
+            br"<!doctype html><html><body id='custom'>hello from custom scheme</body></html>";
         task.respond(&response, body)
             .expect("custom URL scheme handler should respond successfully");
     }

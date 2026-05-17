@@ -158,7 +158,10 @@ impl WebsiteDataStore {
     #[must_use]
     pub fn default_data_store() -> Self {
         let ptr = unsafe { ffi::wk_website_data_store_default() };
-        assert!(!ptr.is_null(), "wk_website_data_store_default returned null");
+        assert!(
+            !ptr.is_null(),
+            "wk_website_data_store_default returned null"
+        );
         Self { ptr }
     }
 

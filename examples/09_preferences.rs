@@ -23,7 +23,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let view = WebView::with_config(&config)?;
     common::load_html(&view, "<p>preferences</p>", "https://preferences.test/")?;
-    assert_eq!(view.evaluate_javascript("document.body.textContent.trim()")?, "preferences");
+    assert_eq!(
+        view.evaluate_javascript("document.body.textContent.trim()")?,
+        "preferences"
+    );
 
     println!("preferences round-trip succeeded");
     Ok(())

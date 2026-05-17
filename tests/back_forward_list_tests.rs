@@ -17,7 +17,13 @@ fn back_forward_list_reports_current_and_back_items() -> Result<(), Box<dyn std:
     )?;
 
     let list = view.back_forward_list();
-    assert_eq!(list.back_item().map(|item| item.url.as_str()), Some("https://first-list.test/"));
-    assert_eq!(list.current_item().map(|item| item.url.as_str()), Some("https://second-list.test/"));
+    assert_eq!(
+        list.back_item().map(|item| item.url.as_str()),
+        Some("https://first-list.test/")
+    );
+    assert_eq!(
+        list.current_item().map(|item| item.url.as_str()),
+        Some("https://second-list.test/")
+    );
     Ok(())
 }

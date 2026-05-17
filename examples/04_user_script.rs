@@ -10,7 +10,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let view = WebView::with_config(&config)?;
 
-    common::load_html(&view, "<main>user script</main>", "https://user-script.test/")?;
+    common::load_html(
+        &view,
+        "<main>user script</main>",
+        "https://user-script.test/",
+    )?;
     let value = view.evaluate_javascript("window.__webkitInjected")?;
     assert_eq!(value, "from user script");
 

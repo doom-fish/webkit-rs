@@ -37,7 +37,9 @@ pub fn wait_for(timeout: Duration, mut predicate: impl FnMut() -> bool) -> bool 
 }
 
 pub fn artifact_dir(name: &str) -> Result<PathBuf, Box<dyn Error>> {
-    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target").join(name);
+    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("target")
+        .join(name);
     fs::create_dir_all(&dir)?;
     Ok(dir)
 }

@@ -21,8 +21,12 @@ fn navigation_handles_back_and_forward() -> Result<(), Box<dyn std::error::Error
     assert_ne!(first.id(), 0);
     assert_ne!(second.id(), 0);
     assert!(view.go_back().is_some());
-    assert!(common::wait_for(Duration::from_secs(2), || view.url().contains("first-navigation.test")));
+    assert!(common::wait_for(Duration::from_secs(2), || view
+        .url()
+        .contains("first-navigation.test")));
     assert!(view.go_forward().is_some());
-    assert!(common::wait_for(Duration::from_secs(2), || view.url().contains("second-navigation.test")));
+    assert!(common::wait_for(Duration::from_secs(2), || view
+        .url()
+        .contains("second-navigation.test")));
     Ok(())
 }

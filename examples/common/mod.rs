@@ -25,7 +25,9 @@ pub fn load_html(view: &WebView, body: &str, base_url: &str) -> Result<(), Box<d
 }
 
 pub fn artifact_dir(name: &str) -> Result<PathBuf, Box<dyn Error>> {
-    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target").join(name);
+    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("target")
+        .join(name);
     fs::create_dir_all(&dir)?;
     Ok(dir)
 }

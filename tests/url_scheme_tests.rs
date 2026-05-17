@@ -9,7 +9,8 @@ impl UrlSchemeHandler for TestSchemeHandler {
         let response = UrlSchemeResponse::new(task.request().url.clone(), "text/html")
             .with_text_encoding_name("utf-8")
             .with_header("Cache-Control", "no-store");
-        let body = br"<!doctype html><html><body id='custom'>hello from custom scheme</body></html>";
+        let body =
+            br"<!doctype html><html><body id='custom'>hello from custom scheme</body></html>";
         task.respond(&response, body)
             .expect("custom URL scheme handler should respond successfully");
     }
@@ -28,7 +29,10 @@ fn url_scheme_response_builder_preserves_fields() {
     assert_eq!(response.mime_type, "text/plain");
     assert_eq!(response.text_encoding_name.as_deref(), Some("utf-8"));
     assert_eq!(response.status_code, 201);
-    assert_eq!(response.headers.get("X-Test").map(String::as_str), Some("yes"));
+    assert_eq!(
+        response.headers.get("X-Test").map(String::as_str),
+        Some("yes")
+    );
 }
 
 #[test]

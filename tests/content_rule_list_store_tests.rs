@@ -12,7 +12,10 @@ fn content_rule_list_store_compiles_and_looks_up_rules() -> Result<(), Box<dyn s
     )?;
     assert_eq!(rule_list.identifier(), identifier);
     assert!(store.lookup(identifier)?.is_some());
-    assert!(store.available_identifiers()?.iter().any(|item| item == identifier));
+    assert!(store
+        .available_identifiers()?
+        .iter()
+        .any(|item| item == identifier));
     store.remove(identifier)?;
     Ok(())
 }

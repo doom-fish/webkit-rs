@@ -17,7 +17,10 @@ unsafe extern "C" {
     ) -> i32;
     pub fn wk_web_extension_release(ptr: *mut c_void);
     pub fn wk_web_extension_copy_summary_json(ptr: *mut c_void) -> *mut c_char;
-    pub fn wk_web_extension_supports_manifest_version(ptr: *mut c_void, manifest_version: f64) -> bool;
+    pub fn wk_web_extension_supports_manifest_version(
+        ptr: *mut c_void,
+        manifest_version: f64,
+    ) -> bool;
 
     pub fn wk_web_extension_match_pattern_register_custom_url_scheme(
         scheme: *const c_char,
@@ -58,12 +61,16 @@ unsafe extern "C" {
         out_err: *mut *mut c_char,
     ) -> i32;
     pub fn wk_web_extension_controller_configuration_release(ptr: *mut c_void);
-    pub fn wk_web_extension_controller_configuration_copy_summary_json(ptr: *mut c_void) -> *mut c_char;
+    pub fn wk_web_extension_controller_configuration_copy_summary_json(
+        ptr: *mut c_void,
+    ) -> *mut c_char;
     pub fn wk_web_extension_controller_configuration_set_webview_configuration(
         ptr: *mut c_void,
         config_ptr: *mut c_void,
     );
-    pub fn wk_web_extension_controller_configuration_copy_webview_configuration(ptr: *mut c_void) -> *mut c_void;
+    pub fn wk_web_extension_controller_configuration_copy_webview_configuration(
+        ptr: *mut c_void,
+    ) -> *mut c_void;
     pub fn wk_web_extension_controller_configuration_set_default_website_data_store(
         ptr: *mut c_void,
         store_ptr: *mut c_void,
@@ -73,7 +80,9 @@ unsafe extern "C" {
     ) -> *mut c_void;
 
     pub fn wk_web_extension_controller_new() -> *mut c_void;
-    pub fn wk_web_extension_controller_with_configuration(configuration_ptr: *mut c_void) -> *mut c_void;
+    pub fn wk_web_extension_controller_with_configuration(
+        configuration_ptr: *mut c_void,
+    ) -> *mut c_void;
     pub fn wk_web_extension_controller_release(ptr: *mut c_void);
     pub fn wk_web_extension_controller_copy_configuration(ptr: *mut c_void) -> *mut c_void;
     pub fn wk_web_extension_controller_load_context(
@@ -130,15 +139,22 @@ unsafe extern "C" {
     ) -> i32;
     pub fn wk_web_extension_context_set_inspectable(ptr: *mut c_void, value: bool);
     pub fn wk_web_extension_context_set_inspection_name(ptr: *mut c_void, name: *const c_char);
-    pub fn wk_web_extension_context_set_unsupported_apis_json(ptr: *mut c_void, apis_json: *const c_char);
+    pub fn wk_web_extension_context_set_unsupported_apis_json(
+        ptr: *mut c_void,
+        apis_json: *const c_char,
+    );
     pub fn wk_web_extension_context_set_requested_optional_access_to_all_hosts(
         ptr: *mut c_void,
         value: bool,
     );
     pub fn wk_web_extension_context_set_access_to_private_data(ptr: *mut c_void, value: bool);
     pub fn wk_web_extension_context_copy_webview_configuration(ptr: *mut c_void) -> *mut c_void;
-    pub fn wk_web_extension_context_has_permission(ptr: *mut c_void, permission: *const c_char) -> bool;
-    pub fn wk_web_extension_context_has_access_to_url(ptr: *mut c_void, url: *const c_char) -> bool;
+    pub fn wk_web_extension_context_has_permission(
+        ptr: *mut c_void,
+        permission: *const c_char,
+    ) -> bool;
+    pub fn wk_web_extension_context_has_access_to_url(ptr: *mut c_void, url: *const c_char)
+        -> bool;
     pub fn wk_web_extension_context_permission_status_for_permission(
         ptr: *mut c_void,
         permission: *const c_char,
@@ -183,7 +199,9 @@ unsafe extern "C" {
     ) -> i32;
 
     pub fn wk_web_extension_message_port_release(ptr: *mut c_void);
-    pub fn wk_web_extension_message_port_copy_application_identifier(ptr: *mut c_void) -> *mut c_char;
+    pub fn wk_web_extension_message_port_copy_application_identifier(
+        ptr: *mut c_void,
+    ) -> *mut c_char;
     pub fn wk_web_extension_message_port_is_disconnected(ptr: *mut c_void) -> bool;
     pub fn wk_web_extension_message_port_send_message_json(
         ptr: *mut c_void,

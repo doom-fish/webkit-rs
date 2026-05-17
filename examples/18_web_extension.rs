@@ -26,6 +26,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     assert!(extension.supports_manifest_version(3.0));
 
-    println!("loaded web extension: {}", summary.display_name.unwrap_or_default());
+    println!(
+        "loaded web extension: {}",
+        summary.display_name.unwrap_or_default()
+    );
     Ok(())
 }

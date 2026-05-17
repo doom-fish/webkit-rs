@@ -6,7 +6,8 @@ use std::time::{Duration, Instant};
 use webkit::prelude::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let download_dir = common::artifact_dir("example-downloads")?.join(format!("run-{}", std::process::id()));
+    let download_dir =
+        common::artifact_dir("example-downloads")?.join(format!("run-{}", std::process::id()));
     if download_dir.exists() {
         fs::remove_dir_all(&download_dir)?;
     }
@@ -39,7 +40,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     server.join().expect("download server thread");
     assert!(finished, "download did not finish in time");
-    assert!(fs::read_dir(&download_dir)?.next().is_some(), "download directory should contain a file");
+    assert!(
+        fs::read_dir(&download_dir)?.next().is_some(),
+        "download directory should contain a file"
+    );
 
     println!("download finished into {}", download_dir.display());
     Ok(())

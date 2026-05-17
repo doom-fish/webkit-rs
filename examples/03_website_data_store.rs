@@ -20,7 +20,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let data_types = [WebsiteDataType::cookies(), WebsiteDataType::local_storage()];
     let records = store.data_records(&data_types)?;
-    assert!(!records.is_empty(), "expected at least one website data record");
+    assert!(
+        !records.is_empty(),
+        "expected at least one website data record"
+    );
     store.remove_data_for_records(&data_types, &records)?;
     store.remove_data_modified_since(&data_types, SystemTime::UNIX_EPOCH)?;
 

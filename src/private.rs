@@ -1,15 +1,14 @@
 use core::ffi::{c_char, CStr};
 use std::ffi::CString;
 
-use serde::{Serialize, de::DeserializeOwned};
+use serde::{de::DeserializeOwned, Serialize};
 
 use crate::error::WebKitError;
 use crate::ffi;
 
 pub fn to_cstring(value: &str) -> CString {
-    CString::new(value).unwrap_or_else(|_| {
-        CString::new(value.replace('\0', " ")).unwrap_or_default()
-    })
+    CString::new(value)
+        .unwrap_or_else(|_| CString::new(value.replace('\0', " ")).unwrap_or_default())
 }
 
 pub fn to_json_cstring<T>(value: &T) -> CString

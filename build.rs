@@ -63,12 +63,9 @@ fn main() {
 
     if let Ok(xcode_out) = Command::new("xcode-select").arg("-p").output() {
         if xcode_out.status.success() {
-            let xcode_path = String::from_utf8_lossy(&xcode_out.stdout)
-                .trim()
-                .to_owned();
-            let swift_lib_path = format!(
-                "{xcode_path}/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx"
-            );
+            let xcode_path = String::from_utf8_lossy(&xcode_out.stdout).trim().to_owned();
+            let swift_lib_path =
+                format!("{xcode_path}/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx");
             println!("cargo:rustc-link-arg=-Wl,-rpath,{swift_lib_path}");
         }
     }

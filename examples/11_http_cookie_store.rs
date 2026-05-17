@@ -18,8 +18,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _ = cookie_store.cookie_policy();
     cookie_store.delete_cookie(&cookie)?;
     let cookies_after_delete = cookie_store.all_cookies()?;
-    assert!(!cookies_after_delete.iter().any(|candidate| candidate.name == "session"));
+    assert!(!cookies_after_delete
+        .iter()
+        .any(|candidate| candidate.name == "session"));
 
-    println!("cookie observer events: {}", cookie_store.drain_events().len());
+    println!(
+        "cookie observer events: {}",
+        cookie_store.drain_events().len()
+    );
     Ok(())
 }
