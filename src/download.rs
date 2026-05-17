@@ -7,6 +7,28 @@ use crate::error::WebKitError;
 use crate::ffi;
 use crate::private::{maybe_take_error, take_bytes, take_json_or_default, take_string};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(i32)]
+pub enum DownloadRedirectPolicy {
+    Cancel = 0,
+    Allow = 1,
+}
+
+impl DownloadRedirectPolicy {
+    #[must_use]
+    pub const fn as_raw(self) -> i32 {
+        self as i32
+    }
+
+    #[must_use]
+    pub const fn from_raw(raw: i32) -> Self {
+        match raw {
+            0 => Self::Cancel,
+            _ => Self::Allow,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DownloadEvent {
@@ -46,6 +68,15 @@ impl Download {
         unsafe { ffi::wk_download_is_user_initiated(self.ptr) }
     }
 
+    pub fn set_redirect_policy(&self, policy: DownloadRedirectPolicy) {
+        unsafe { ffi::wk_download_set_redirect_policy(self.ptr, policy.as_raw()) }
+    }
+
+    #[must_use]
+    pub fn redirect_policy(&self) -> DownloadRedirectPolicy {
+        DownloadRedirectPolicy::from_raw(unsafe { ffi::wk_download_get_redirect_policy(self.ptr) })
+    }
+
     #[must_use]
     pub fn drain_events(&self) -> Vec<DownloadEvent> {
         unsafe { take_json_or_default(ffi::wk_download_copy_events_json(self.ptr)) }
@@ -69,7 +100,9 @@ impl Download {
         if out_resume_data.is_null() {
             Ok(None)
         } else {
-            Ok(Some(unsafe { take_bytes(out_resume_data, out_resume_data_len) }))
+            Ok(Some(unsafe {
+                take_bytes(out_resume_data, out_resume_data_len)
+            }))
         }
     }
 }

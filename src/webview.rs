@@ -1,14 +1,17 @@
 use core::ffi::{c_char, c_void, CStr};
 use core::ptr;
+use std::ops::{BitOr, BitOrAssign};
 use std::path::Path;
 use std::time::Duration;
+
+use serde_json::Value;
 
 use crate::back_forward_list::BackForwardList;
 use crate::config::WebViewConfiguration;
 use crate::download::Download;
-use crate::error::WebKitError;
-use crate::ffi::{self, WKMsgCallback, WKNavCallback};
-use crate::find::{FindConfiguration, FindResult};
+use crate::error::{status_from_error, WebKitError};
+use crate::ffi::{self, WKMsgCallback, WKMsgReplyCallback, WKNavCallback};
+use crate::find::{FindConfiguration, FindResult, TextFinderAction};
 use crate::navigation::Navigation;
 use crate::navigation_delegate::{NavigationDelegateConfig, NavigationEvent};
 use crate::pdf_configuration::PDFConfiguration;
@@ -17,12 +20,117 @@ use crate::private::{
 };
 use crate::script_message_handler::ScriptMessage;
 use crate::snapshot_configuration::SnapshotConfiguration;
-use crate::ui_delegate::{UIDelegateConfig, UIDelegateEvent};
+use crate::ui_delegate::{UIDelegateConfig, UIDelegateEvent, UIDelegateEventDetail};
 
 pub use crate::navigation_delegate::NavigationEventKind;
 
 type NavigationHandler = dyn Fn(NavigationEvent) + Send + 'static;
 type MessageHandler = dyn Fn(&str, &str) + Send + 'static;
+type ReplyMessageHandler =
+    dyn Fn(&str, &str) -> Result<Option<Value>, WebKitError> + Send + 'static;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(i32)]
+pub enum MediaPlaybackState {
+    None = 0,
+    Playing = 1,
+    Paused = 2,
+    Suspended = 3,
+}
+
+impl MediaPlaybackState {
+    #[must_use]
+    pub const fn from_raw(raw: i32) -> Self {
+        match raw {
+            1 => Self::Playing,
+            2 => Self::Paused,
+            3 => Self::Suspended,
+            _ => Self::None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(i32)]
+pub enum MediaCaptureState {
+    None = 0,
+    Active = 1,
+    Muted = 2,
+}
+
+impl MediaCaptureState {
+    #[must_use]
+    pub const fn as_raw(self) -> i32 {
+        self as i32
+    }
+
+    #[must_use]
+    pub const fn from_raw(raw: i32) -> Self {
+        match raw {
+            1 => Self::Active,
+            2 => Self::Muted,
+            _ => Self::None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(i32)]
+pub enum FullscreenState {
+    NotInFullscreen = 0,
+    EnteringFullscreen = 1,
+    InFullscreen = 2,
+    ExitingFullscreen = 3,
+}
+
+impl FullscreenState {
+    #[must_use]
+    pub const fn from_raw(raw: i32) -> Self {
+        match raw {
+            1 => Self::EnteringFullscreen,
+            2 => Self::InFullscreen,
+            3 => Self::ExitingFullscreen,
+            _ => Self::NotInFullscreen,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct WebViewDataType(u64);
+
+impl WebViewDataType {
+    pub const NONE: Self = Self(0);
+    pub const SESSION_STORAGE: Self = Self(1 << 0);
+
+    #[must_use]
+    pub const fn from_bits(bits: u64) -> Self {
+        Self(bits)
+    }
+
+    #[must_use]
+    pub const fn bits(self) -> u64 {
+        self.0
+    }
+
+    #[must_use]
+    pub const fn contains(self, other: Self) -> bool {
+        (self.0 & other.0) == other.0
+    }
+}
+
+impl BitOr for WebViewDataType {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Self(self.0 | rhs.0)
+    }
+}
+
+impl BitOrAssign for WebViewDataType {
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.0 |= rhs.0;
+    }
+}
 
 struct NavCallbackHolder {
     f: Box<NavigationHandler>,
@@ -30,6 +138,24 @@ struct NavCallbackHolder {
 
 struct MsgCallbackHolder {
     f: Box<MessageHandler>,
+}
+
+struct ReplyMsgCallbackHolder {
+    f: Box<ReplyMessageHandler>,
+}
+
+fn malloc_c_string(value: &str) -> *mut c_char {
+    let sanitized = value.replace('\0', " ");
+    let len = sanitized.len() + 1;
+    let ptr = unsafe { libc::malloc(len) }.cast::<c_char>();
+    if ptr.is_null() {
+        return ptr;
+    }
+    unsafe {
+        ptr::copy_nonoverlapping(sanitized.as_ptr().cast::<c_char>(), ptr, sanitized.len());
+        *ptr.add(sanitized.len()) = 0;
+    }
+    ptr
 }
 
 unsafe extern "C" fn nav_trampoline(user_info: *mut c_void, event_json: *const c_char) {
@@ -67,6 +193,64 @@ unsafe extern "C" fn msg_trampoline(
     (holder.f)(name, body_str);
 }
 
+unsafe extern "C" fn msg_reply_trampoline(
+    user_info: *mut c_void,
+    handler_name: *const c_char,
+    body: *const c_char,
+    out_reply: *mut *mut c_char,
+    out_err: *mut *mut c_char,
+) -> i32 {
+    if user_info.is_null() {
+        if !out_err.is_null() {
+            *out_err = malloc_c_string("missing script message reply handler");
+        }
+        return ffi::status::INVALID_ARGUMENT;
+    }
+
+    if !out_reply.is_null() {
+        *out_reply = ptr::null_mut();
+    }
+    if !out_err.is_null() {
+        *out_err = ptr::null_mut();
+    }
+
+    let holder = &*(user_info.cast::<ReplyMsgCallbackHolder>());
+    let name = if handler_name.is_null() {
+        ""
+    } else {
+        CStr::from_ptr(handler_name).to_str().unwrap_or("")
+    };
+    let body_str = if body.is_null() {
+        ""
+    } else {
+        CStr::from_ptr(body).to_str().unwrap_or("")
+    };
+
+    match (holder.f)(name, body_str) {
+        Ok(Some(reply)) => match serde_json::to_string(&reply) {
+            Ok(json) => {
+                if !out_reply.is_null() {
+                    *out_reply = malloc_c_string(&json);
+                }
+                ffi::status::OK
+            }
+            Err(error) => {
+                if !out_err.is_null() {
+                    *out_err = malloc_c_string(&error.to_string());
+                }
+                ffi::status::FRAMEWORK_ERROR
+            }
+        },
+        Ok(None) => ffi::status::OK,
+        Err(error) => {
+            if !out_err.is_null() {
+                *out_err = malloc_c_string(&error.to_string());
+            }
+            status_from_error(&error)
+        }
+    }
+}
+
 /// Safe wrapper around `WKWebView`.
 ///
 /// All WebKit APIs are driven from the main thread. The Swift bridge uses
@@ -76,6 +260,7 @@ pub struct WebView {
     ptr: *mut c_void,
     nav_holder: Option<Box<NavCallbackHolder>>,
     msg_holder: Option<Box<MsgCallbackHolder>>,
+    reply_msg_holder: Option<Box<ReplyMsgCallbackHolder>>,
 }
 
 // SAFETY: The Swift bridge ensures all WebKit calls happen on the main thread.
@@ -101,6 +286,7 @@ impl WebView {
             ptr,
             nav_holder: None,
             msg_holder: None,
+            reply_msg_holder: None,
         })
     }
 
@@ -121,6 +307,7 @@ impl WebView {
             ptr,
             nav_holder: None,
             msg_holder: None,
+            reply_msg_holder: None,
         })
     }
 
@@ -162,6 +349,25 @@ impl WebView {
         self.msg_holder = Some(holder);
     }
 
+    /// Register a reply-capable script-message callback.
+    pub fn set_message_handler_with_reply<F>(&mut self, f: F)
+    where
+        F: Fn(&str, &str) -> Result<Option<Value>, WebKitError> + Send + 'static,
+    {
+        let holder = Box::new(ReplyMsgCallbackHolder { f: Box::new(f) });
+        let user_info = std::ptr::from_ref(holder.as_ref())
+            .cast_mut()
+            .cast::<c_void>();
+        unsafe {
+            ffi::wk_webview_set_msg_reply_callback(
+                self.ptr,
+                Some(msg_reply_trampoline as WKMsgReplyCallback),
+                user_info,
+            );
+        }
+        self.reply_msg_holder = Some(holder);
+    }
+
     pub fn set_navigation_delegate_config(&self, config: &NavigationDelegateConfig) {
         unsafe {
             ffi::wk_webview_set_navigation_delegate_config(
@@ -193,6 +399,11 @@ impl WebView {
 
     #[must_use]
     pub fn drain_ui_events(&self) -> Vec<UIDelegateEvent> {
+        unsafe { take_json_or_default(ffi::wk_webview_drain_ui_events_json(self.ptr)) }
+    }
+
+    #[must_use]
+    pub fn drain_ui_event_details(&self) -> Vec<UIDelegateEventDetail> {
         unsafe { take_json_or_default(ffi::wk_webview_drain_ui_events_json(self.ptr)) }
     }
 
@@ -382,6 +593,26 @@ impl WebView {
         unsafe { ffi::wk_webview_stop_loading(self.ptr) }
     }
 
+    pub fn perform_go_back_action(&self) {
+        unsafe { ffi::wk_webview_perform_go_back_action(self.ptr) }
+    }
+
+    pub fn perform_go_forward_action(&self) {
+        unsafe { ffi::wk_webview_perform_go_forward_action(self.ptr) }
+    }
+
+    pub fn perform_reload_action(&self) {
+        unsafe { ffi::wk_webview_perform_reload_action(self.ptr) }
+    }
+
+    pub fn perform_reload_from_origin_action(&self) {
+        unsafe { ffi::wk_webview_perform_reload_from_origin_action(self.ptr) }
+    }
+
+    pub fn perform_stop_loading_action(&self) {
+        unsafe { ffi::wk_webview_perform_stop_loading_action(self.ptr) }
+    }
+
     #[must_use]
     pub fn go_to_back_forward_index(&self, index: isize) -> Option<Navigation> {
         let mut out_navigation: *mut c_void = ptr::null_mut();
@@ -486,6 +717,60 @@ impl WebView {
         unsafe { ffi::wk_webview_get_inspectable(self.ptr) }
     }
 
+    pub fn request_media_playback_state(&self) -> Result<MediaPlaybackState, WebKitError> {
+        let mut out_state = 0;
+        let mut out_err = ptr::null_mut();
+        let status = unsafe {
+            ffi::wk_webview_request_media_playback_state(self.ptr, &mut out_state, &mut out_err)
+        };
+        if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
+            return Err(error);
+        }
+        Ok(MediaPlaybackState::from_raw(out_state))
+    }
+
+    #[must_use]
+    pub fn camera_capture_state(&self) -> MediaCaptureState {
+        MediaCaptureState::from_raw(unsafe { ffi::wk_webview_get_camera_capture_state(self.ptr) })
+    }
+
+    #[must_use]
+    pub fn microphone_capture_state(&self) -> MediaCaptureState {
+        MediaCaptureState::from_raw(unsafe {
+            ffi::wk_webview_get_microphone_capture_state(self.ptr)
+        })
+    }
+
+    pub fn set_camera_capture_state(&self, state: MediaCaptureState) -> Result<(), WebKitError> {
+        let mut out_err = ptr::null_mut();
+        let status = unsafe {
+            ffi::wk_webview_set_camera_capture_state(self.ptr, state.as_raw(), &mut out_err)
+        };
+        if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
+            return Err(error);
+        }
+        Ok(())
+    }
+
+    pub fn set_microphone_capture_state(
+        &self,
+        state: MediaCaptureState,
+    ) -> Result<(), WebKitError> {
+        let mut out_err = ptr::null_mut();
+        let status = unsafe {
+            ffi::wk_webview_set_microphone_capture_state(self.ptr, state.as_raw(), &mut out_err)
+        };
+        if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
+            return Err(error);
+        }
+        Ok(())
+    }
+
+    #[must_use]
+    pub fn fullscreen_state(&self) -> FullscreenState {
+        FullscreenState::from_raw(unsafe { ffi::wk_webview_get_fullscreen_state(self.ptr) })
+    }
+
     /// Evaluate JavaScript and return the result as a `String`.
     ///
     /// # Errors
@@ -554,6 +839,15 @@ impl WebView {
             return Err(error);
         }
         Ok(unsafe { take_json_or_default(out_result) })
+    }
+
+    #[must_use]
+    pub fn can_perform_text_finder_action(&self, action: TextFinderAction) -> bool {
+        unsafe { ffi::wk_webview_validate_text_finder_action(self.ptr, action.as_raw()) }
+    }
+
+    pub fn perform_text_finder_action(&self, action: TextFinderAction) {
+        unsafe { ffi::wk_webview_perform_text_finder_action(self.ptr, action.as_raw()) }
     }
 
     /// Take a snapshot of the current page and return PNG bytes.
@@ -625,6 +919,36 @@ impl WebView {
             return Err(error);
         }
         Ok(unsafe { take_bytes(out_bytes, out_len) })
+    }
+
+    pub fn fetch_data_of_types(&self, data_types: WebViewDataType) -> Result<Vec<u8>, WebKitError> {
+        let mut out_bytes: *mut u8 = ptr::null_mut();
+        let mut out_len: usize = 0;
+        let mut out_err: *mut c_char = ptr::null_mut();
+        let status = unsafe {
+            ffi::wk_webview_fetch_data_of_types(
+                self.ptr,
+                data_types.bits(),
+                &mut out_bytes,
+                &mut out_len,
+                &mut out_err,
+            )
+        };
+        if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
+            return Err(error);
+        }
+        Ok(unsafe { take_bytes(out_bytes, out_len) })
+    }
+
+    pub fn restore_data(&self, data: &[u8]) -> Result<(), WebKitError> {
+        let mut out_err: *mut c_char = ptr::null_mut();
+        let status = unsafe {
+            ffi::wk_webview_restore_data(self.ptr, data.as_ptr(), data.len(), &mut out_err)
+        };
+        if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
+            return Err(error);
+        }
+        Ok(())
     }
 
     /// Start a download for the given request URL.

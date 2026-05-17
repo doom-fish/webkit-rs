@@ -38,7 +38,7 @@ Legend:
 | `customUserAgent`, `allowsLinkPreview`, `pageZoom`, `mediaType`, `inspectable` | ✅ | Getters and setters exposed. |
 | `evaluateJavaScript(_:completionHandler:)`, `callAsyncJavaScript(_:arguments:in:in:completionHandler:)` | ✅ | Blocking wrappers exposed. |
 | `takeSnapshot(with:completionHandler:)`, `createPDF(configuration:completionHandler:)`, `startDownload(using:completionHandler:)` | ✅ | Snapshot, PDF, and download wrappers exposed. |
-| AppKit / platform extras (`scrollView`, magnification, theme color, media controls, find interactions, editable state, etc.) | 🟡 | Not yet wrapped in the safe Rust surface. |
+| AppKit / platform extras (`scrollView`, magnification, theme color, media controls, find interactions, editable state, etc.) | 🟡 | IBAction navigation helpers, text-finder actions, media playback / capture / fullscreen state, and web-view data import/export are wrapped; magnification, theme colors, and other AppKit extras remain open. |
 
 ## WKWebViewConfiguration
 
@@ -48,9 +48,9 @@ Legend:
 | `websiteDataStore` | ✅ | `set_website_data_store` and `website_data_store`. |
 | `applicationNameForUserAgent`, `allowsAirPlayForMediaPlayback` | ✅ | Direct getters / setters exposed. |
 | `defaultWebpagePreferences.allowsContentJavaScript` | ✅ | Exposed through `set_allows_content_javascript` / `allows_content_javascript` and `Preferences::java_script_enabled`. |
-| `userContentController` user scripts / message handlers / content rule lists | ✅ | User scripts, handler-name registration, and content rule list install / removal are bridged. |
+| `userContentController` user scripts / message handlers / content rule lists | ✅ | User scripts, one-way and reply-capable handler-name registration, and content rule list install / removal are bridged. |
 | `processPool` | ⏭️ | Deprecated on macOS 12+. |
-| macOS / iOS feature flags such as `suppressesIncrementalRendering`, `upgradeKnownHostsToHTTPS`, media playback requirements, inline predictions, writing tools, and URL scheme handlers | 🟡 | Not yet wrapped. |
+| macOS / iOS feature flags such as `suppressesIncrementalRendering`, `upgradeKnownHostsToHTTPS`, media playback requirements, inline predictions, writing tools, and URL scheme handlers | 🟡 | `mediaTypesRequiringUserActionForPlayback` and `userInterfaceDirectionPolicy` are wrapped; the remaining knobs are still open. |
 | iOS-only members (`allowsInlineMediaPlayback`, data detectors, picture-in-picture, viewport behaviors) | ⏭️ | iOS-only for this macOS crate. |
 
 ## WKWebsiteDataStore / WKWebsiteDataRecord
@@ -96,7 +96,7 @@ Legend:
 | API | Status | Notes |
 | --- | --- | --- |
 | JavaScript alert / confirm / prompt panels | ✅ | Headless-safe responses and event recording. |
-| `createWebViewWithConfiguration`, `runOpenPanel`, media-capture permission request | ✅ | Bridged with deterministic headless behavior. |
+| `createWebViewWithConfiguration`, `runOpenPanel`, media-capture permission request | ✅ | Bridged with deterministic headless behavior and typed `WindowFeatures` / `OpenPanelParameters` / `SecurityOrigin` event details. |
 | Remaining AppKit / iOS delegate hooks (context menus, previews, fullscreen, focus updates, etc.) | 🟡 | Not yet exposed. |
 
 ## WKScriptMessageHandler
@@ -105,7 +105,7 @@ Legend:
 | --- | --- | --- |
 | `userContentController(_:didReceive:)` | ✅ | Callback and event-drain surfaces exposed. |
 | `WKScriptMessage` name / body / frame info / world | ✅ | Exposed as `ScriptMessage`. |
-| `WKScriptMessageHandlerWithReply` | 🟡 | Not yet wrapped. |
+| `WKScriptMessageHandlerWithReply` | ✅ | `WebViewConfiguration::add_message_handler_with_reply` plus `WebView::set_message_handler_with_reply`. |
 
 ## WKPreferences
 

@@ -2,26 +2,32 @@
 
 use core::ffi::{c_char, c_void};
 
+pub mod attributed_string;
 pub mod content_rule_list_store;
 pub mod http_cookie_store;
 pub mod url_scheme;
 pub mod web_extension;
 pub mod website_data_store;
 
+pub use attributed_string::*;
 pub use content_rule_list_store::*;
 pub use http_cookie_store::*;
 pub use url_scheme::*;
 pub use web_extension::*;
 pub use website_data_store::*;
 
-pub type WKNavCallback =
-    unsafe extern "C" fn(user_info: *mut c_void, event_json: *const c_char);
+pub type WKNavCallback = unsafe extern "C" fn(user_info: *mut c_void, event_json: *const c_char);
 
-pub type WKMsgCallback = unsafe extern "C" fn(
+pub type WKMsgCallback =
+    unsafe extern "C" fn(user_info: *mut c_void, handler_name: *const c_char, body: *const c_char);
+
+pub type WKMsgReplyCallback = unsafe extern "C" fn(
     user_info: *mut c_void,
     handler_name: *const c_char,
     body: *const c_char,
-);
+    out_reply: *mut *mut c_char,
+    out_err: *mut *mut c_char,
+) -> i32;
 
 unsafe extern "C" {
     // Lifecycle
@@ -36,6 +42,8 @@ unsafe extern "C" {
     pub fn wk_download_copy_original_request_url(ptr: *mut c_void) -> *mut c_char;
     pub fn wk_download_is_user_initiated(ptr: *mut c_void) -> bool;
     pub fn wk_download_copy_events_json(ptr: *mut c_void) -> *mut c_char;
+    pub fn wk_download_set_redirect_policy(ptr: *mut c_void, raw_value: i32);
+    pub fn wk_download_get_redirect_policy(ptr: *mut c_void) -> i32;
     pub fn wk_download_cancel(
         ptr: *mut c_void,
         out_resume_data: *mut *mut u8,
@@ -50,6 +58,13 @@ unsafe extern "C" {
     pub fn wk_config_copy_application_name(ptr: *mut c_void) -> *mut c_char;
     pub fn wk_config_set_allows_airplay(ptr: *mut c_void, v: bool);
     pub fn wk_config_get_allows_airplay(ptr: *mut c_void) -> bool;
+    pub fn wk_config_set_media_types_requiring_user_action_for_playback(
+        ptr: *mut c_void,
+        raw_value: u64,
+    );
+    pub fn wk_config_get_media_types_requiring_user_action_for_playback(ptr: *mut c_void) -> u64;
+    pub fn wk_config_set_user_interface_direction_policy(ptr: *mut c_void, raw_value: i32);
+    pub fn wk_config_get_user_interface_direction_policy(ptr: *mut c_void) -> i32;
     pub fn wk_config_set_allows_content_javascript(ptr: *mut c_void, v: bool);
     pub fn wk_config_get_allows_content_javascript(ptr: *mut c_void) -> bool;
     pub fn wk_config_set_preferences_json(ptr: *mut c_void, json: *const c_char);
@@ -69,6 +84,7 @@ unsafe extern "C" {
     );
     pub fn wk_config_remove_all_user_scripts(ptr: *mut c_void);
     pub fn wk_config_add_message_handler_name(ptr: *mut c_void, name: *const c_char);
+    pub fn wk_config_add_message_handler_with_reply_name(ptr: *mut c_void, name: *const c_char);
 
     // WebView
     pub fn wk_webview_new(cfg: *mut c_void) -> *mut c_void;
@@ -81,6 +97,11 @@ unsafe extern "C" {
     pub fn wk_webview_set_msg_callback(
         ptr: *mut c_void,
         callback: Option<WKMsgCallback>,
+        user_info: *mut c_void,
+    );
+    pub fn wk_webview_set_msg_reply_callback(
+        ptr: *mut c_void,
+        callback: Option<WKMsgReplyCallback>,
         user_info: *mut c_void,
     );
     pub fn wk_webview_set_navigation_delegate_config(
@@ -134,6 +155,13 @@ unsafe extern "C" {
         out_navigation: *mut *mut c_void,
     ) -> bool;
     pub fn wk_webview_stop_loading(ptr: *mut c_void);
+    pub fn wk_webview_perform_go_back_action(ptr: *mut c_void);
+    pub fn wk_webview_perform_go_forward_action(ptr: *mut c_void);
+    pub fn wk_webview_perform_reload_action(ptr: *mut c_void);
+    pub fn wk_webview_perform_reload_from_origin_action(ptr: *mut c_void);
+    pub fn wk_webview_perform_stop_loading_action(ptr: *mut c_void);
+    pub fn wk_webview_validate_text_finder_action(ptr: *mut c_void, action: i32) -> bool;
+    pub fn wk_webview_perform_text_finder_action(ptr: *mut c_void, action: i32);
     pub fn wk_webview_go_to_back_forward_index(
         ptr: *mut c_void,
         index: isize,
@@ -157,6 +185,37 @@ unsafe extern "C" {
     pub fn wk_webview_copy_media_type(ptr: *mut c_void) -> *mut c_char;
     pub fn wk_webview_set_inspectable(ptr: *mut c_void, value: bool);
     pub fn wk_webview_get_inspectable(ptr: *mut c_void) -> bool;
+    pub fn wk_webview_request_media_playback_state(
+        ptr: *mut c_void,
+        out_state: *mut i32,
+        out_err: *mut *mut c_char,
+    ) -> i32;
+    pub fn wk_webview_get_camera_capture_state(ptr: *mut c_void) -> i32;
+    pub fn wk_webview_get_microphone_capture_state(ptr: *mut c_void) -> i32;
+    pub fn wk_webview_set_camera_capture_state(
+        ptr: *mut c_void,
+        raw_value: i32,
+        out_err: *mut *mut c_char,
+    ) -> i32;
+    pub fn wk_webview_set_microphone_capture_state(
+        ptr: *mut c_void,
+        raw_value: i32,
+        out_err: *mut *mut c_char,
+    ) -> i32;
+    pub fn wk_webview_get_fullscreen_state(ptr: *mut c_void) -> i32;
+    pub fn wk_webview_fetch_data_of_types(
+        ptr: *mut c_void,
+        data_types: u64,
+        out_bytes: *mut *mut u8,
+        out_len: *mut usize,
+        out_err: *mut *mut c_char,
+    ) -> i32;
+    pub fn wk_webview_restore_data(
+        ptr: *mut c_void,
+        bytes: *const u8,
+        len: usize,
+        out_err: *mut *mut c_char,
+    ) -> i32;
     pub fn wk_webview_evaluate_js(
         ptr: *mut c_void,
         js: *const c_char,

@@ -9,3 +9,15 @@ fn script_message_deserializes_from_json() -> Result<(), Box<dyn std::error::Err
     assert!(message.is_main_frame);
     Ok(())
 }
+
+#[test]
+fn script_message_reply_surface_is_available() {
+    fn install_handler(view: &mut WebView) {
+        view.set_message_handler_with_reply(|name, body| {
+            Ok(Some(serde_json::json!({ "name": name, "body": body })))
+        });
+    }
+
+    let _: fn(&WebViewConfiguration, &str) = WebViewConfiguration::add_message_handler_with_reply;
+    let _ = install_handler as fn(&mut WebView);
+}

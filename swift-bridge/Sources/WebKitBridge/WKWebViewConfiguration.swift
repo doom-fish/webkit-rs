@@ -142,6 +142,7 @@ private func wkApplyPreferences(_ dictionary: [String: Any], to configuration: W
 final class WKConfigBox: NSObject {
     let config: WKWebViewConfiguration
     var registeredHandlerNames: [String] = []
+    var registeredReplyHandlerNames: [String] = []
     var registeredURLSchemeHandlers: [String: AnyObject] = [:]
 
     init(configuration: WKWebViewConfiguration) {
@@ -190,6 +191,42 @@ public func wk_config_get_allows_airplay(_ ptr: UnsafeMutableRawPointer?) -> Boo
     guard let ptr else { return false }
     let box: WKConfigBox = wkBorrow(ptr)
     return box.config.allowsAirPlayForMediaPlayback
+}
+
+@_cdecl("wk_config_set_media_types_requiring_user_action_for_playback")
+public func wk_config_set_media_types_requiring_user_action_for_playback(
+    _ ptr: UnsafeMutableRawPointer?,
+    _ rawValue: UInt64
+) {
+    guard let ptr else { return }
+    let box: WKConfigBox = wkBorrow(ptr)
+    box.config.mediaTypesRequiringUserActionForPlayback = WKAudiovisualMediaTypes(rawValue: UInt(rawValue))
+}
+
+@_cdecl("wk_config_get_media_types_requiring_user_action_for_playback")
+public func wk_config_get_media_types_requiring_user_action_for_playback(_ ptr: UnsafeMutableRawPointer?) -> UInt64 {
+    guard let ptr else { return 0 }
+    let box: WKConfigBox = wkBorrow(ptr)
+    return UInt64(box.config.mediaTypesRequiringUserActionForPlayback.rawValue)
+}
+
+@_cdecl("wk_config_set_user_interface_direction_policy")
+public func wk_config_set_user_interface_direction_policy(
+    _ ptr: UnsafeMutableRawPointer?,
+    _ rawValue: Int32
+) {
+    guard let ptr else { return }
+    let box: WKConfigBox = wkBorrow(ptr)
+    if let policy = WKUserInterfaceDirectionPolicy(rawValue: Int(rawValue)) {
+        box.config.userInterfaceDirectionPolicy = policy
+    }
+}
+
+@_cdecl("wk_config_get_user_interface_direction_policy")
+public func wk_config_get_user_interface_direction_policy(_ ptr: UnsafeMutableRawPointer?) -> Int32 {
+    guard let ptr else { return 0 }
+    let box: WKConfigBox = wkBorrow(ptr)
+    return Int32(box.config.userInterfaceDirectionPolicy.rawValue)
 }
 
 @_cdecl("wk_config_set_allows_content_javascript")
@@ -320,5 +357,18 @@ public func wk_config_add_message_handler_name(
     let handlerName = String(cString: name)
     if !box.registeredHandlerNames.contains(handlerName) {
         box.registeredHandlerNames.append(handlerName)
+    }
+}
+
+@_cdecl("wk_config_add_message_handler_with_reply_name")
+public func wk_config_add_message_handler_with_reply_name(
+    _ ptr: UnsafeMutableRawPointer?,
+    _ name: UnsafePointer<CChar>?
+) {
+    guard let ptr, let name else { return }
+    let box: WKConfigBox = wkBorrow(ptr)
+    let handlerName = String(cString: name)
+    if !box.registeredReplyHandlerNames.contains(handlerName) {
+        box.registeredReplyHandlerNames.append(handlerName)
     }
 }

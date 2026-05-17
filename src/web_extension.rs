@@ -1577,7 +1577,7 @@ impl WebExtensionContext {
     pub fn set_unsupported_apis(&self, apis: &[String]) {
         let apis_json = to_json_cstring(apis);
         unsafe {
-            ffi::wk_web_extension_context_set_unsupported_apis_json(self.ptr, apis_json.as_ptr())
+            ffi::wk_web_extension_context_set_unsupported_apis_json(self.ptr, apis_json.as_ptr());
         }
     }
 
@@ -1837,7 +1837,7 @@ impl WebExtensionMessagePort {
     pub fn disconnect_with_error(&self, message: &str) {
         let message = to_cstring(message);
         unsafe {
-            ffi::wk_web_extension_message_port_disconnect_with_error(self.ptr, message.as_ptr())
+            ffi::wk_web_extension_message_port_disconnect_with_error(self.ptr, message.as_ptr());
         }
     }
 }

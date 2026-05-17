@@ -2,7 +2,7 @@
 
 Safe Rust bindings for Apple's `WKWebView` APIs on macOS.
 
-> **Status:** v0.2.2 — expanded the safe Rust surface with full `WKWebExtensionControllerDelegate` / `WKWebExtensionTab` / `WKWebExtensionWindow` trait coverage, alongside the existing `WKWebView`, storage, snapshot, download, URL-scheme, find, and `WKWebExtension*` wrappers. See [`COVERAGE.md`](COVERAGE.md) for the audited SDK matrix.
+> **Status:** v0.2.3 — the audited macOS WebKit surface now closes every remaining public-symbol gap, including attributed-string HTML loading, reply-capable script message handlers, typed UI delegate details, media/fullscreen state, and web-view data import/export. See [`COVERAGE.md`](COVERAGE.md) for the audited SDK matrix.
 
 ## Quick start
 

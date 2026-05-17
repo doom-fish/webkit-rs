@@ -14,6 +14,47 @@ impl WebExtensionTab for StubTab {}
 struct StubWindow;
 impl WebExtensionWindow for StubWindow {}
 
+type OpenNewWindowFn = fn(
+    &StubControllerDelegate,
+    &WebExtensionController,
+    &WebExtensionWindowConfiguration,
+    &WebExtensionContext,
+) -> Result<Option<WebExtensionWindowHandle>, WebKitError>;
+type OpenNewTabFn = fn(
+    &StubControllerDelegate,
+    &WebExtensionController,
+    &WebExtensionTabConfiguration,
+    &WebExtensionContext,
+) -> Result<Option<WebExtensionTabHandle>, WebKitError>;
+type PromptForPermissionsFn = fn(
+    &StubControllerDelegate,
+    &WebExtensionController,
+    &[WebExtensionPermission],
+    Option<&dyn WebExtensionTab>,
+    &WebExtensionContext,
+) -> WebExtensionPermissionGrant;
+type PromptForUrlsFn = fn(
+    &StubControllerDelegate,
+    &WebExtensionController,
+    &[String],
+    Option<&dyn WebExtensionTab>,
+    &WebExtensionContext,
+) -> WebExtensionUrlGrant;
+type PromptForMatchPatternsFn = fn(
+    &StubControllerDelegate,
+    &WebExtensionController,
+    &[WebExtensionMatchPattern],
+    Option<&dyn WebExtensionTab>,
+    &WebExtensionContext,
+) -> WebExtensionMatchPatternGrant;
+type SendMessageFn = fn(
+    &StubControllerDelegate,
+    &WebExtensionController,
+    &serde_json::Value,
+    Option<&str>,
+    &WebExtensionContext,
+) -> Result<Option<serde_json::Value>, WebKitError>;
+
 #[test]
 fn web_extension_types_are_structured() {
     let permission = WebExtensionPermission::new("storage");
@@ -40,8 +81,8 @@ fn web_extension_types_are_structured() {
     assert_eq!(WebExtensionMatchPatternGrant::default().allowed.len(), 0);
 
     let size = WebExtensionSize::new(1280.0, 720.0);
-    assert_eq!(size.width, 1280.0);
-    assert_eq!(size.height, 720.0);
+    assert!((size.width - 1280.0).abs() < f64::EPSILON);
+    assert!((size.height - 720.0).abs() < f64::EPSILON);
 
     let snapshot = WebExtensionTabSnapshot {
         png_data: vec![0x89, b'P', b'N', b'G'],
@@ -66,46 +107,16 @@ fn web_extension_delegate_traits_expose_controller_surface() {
         &WebExtensionController,
         &WebExtensionContext,
     ) -> Option<WebExtensionWindowHandle> = StubControllerDelegate::focused_window_for_context;
-    let _: fn(
-        &StubControllerDelegate,
-        &WebExtensionController,
-        &WebExtensionWindowConfiguration,
-        &WebExtensionContext,
-    ) -> Result<Option<WebExtensionWindowHandle>, WebKitError> =
-        StubControllerDelegate::open_new_window;
-    let _: fn(
-        &StubControllerDelegate,
-        &WebExtensionController,
-        &WebExtensionTabConfiguration,
-        &WebExtensionContext,
-    ) -> Result<Option<WebExtensionTabHandle>, WebKitError> = StubControllerDelegate::open_new_tab;
+    let _: OpenNewWindowFn = StubControllerDelegate::open_new_window;
+    let _: OpenNewTabFn = StubControllerDelegate::open_new_tab;
     let _: fn(
         &StubControllerDelegate,
         &WebExtensionController,
         &WebExtensionContext,
     ) -> Result<(), WebKitError> = StubControllerDelegate::open_options_page;
-    let _: fn(
-        &StubControllerDelegate,
-        &WebExtensionController,
-        &[WebExtensionPermission],
-        Option<&dyn WebExtensionTab>,
-        &WebExtensionContext,
-    ) -> WebExtensionPermissionGrant = StubControllerDelegate::prompt_for_permissions;
-    let _: fn(
-        &StubControllerDelegate,
-        &WebExtensionController,
-        &[String],
-        Option<&dyn WebExtensionTab>,
-        &WebExtensionContext,
-    ) -> WebExtensionUrlGrant = StubControllerDelegate::prompt_for_permission_to_access_urls;
-    let _: fn(
-        &StubControllerDelegate,
-        &WebExtensionController,
-        &[WebExtensionMatchPattern],
-        Option<&dyn WebExtensionTab>,
-        &WebExtensionContext,
-    ) -> WebExtensionMatchPatternGrant =
-        StubControllerDelegate::prompt_for_permission_match_patterns;
+    let _: PromptForPermissionsFn = StubControllerDelegate::prompt_for_permissions;
+    let _: PromptForUrlsFn = StubControllerDelegate::prompt_for_permission_to_access_urls;
+    let _: PromptForMatchPatternsFn = StubControllerDelegate::prompt_for_permission_match_patterns;
     let _: fn(
         &StubControllerDelegate,
         &WebExtensionController,
@@ -118,13 +129,7 @@ fn web_extension_delegate_traits_expose_controller_surface() {
         &WebExtensionAction,
         &WebExtensionContext,
     ) -> Result<(), WebKitError> = StubControllerDelegate::present_popup_for_action;
-    let _: fn(
-        &StubControllerDelegate,
-        &WebExtensionController,
-        &serde_json::Value,
-        Option<&str>,
-        &WebExtensionContext,
-    ) -> Result<Option<serde_json::Value>, WebKitError> = StubControllerDelegate::send_message;
+    let _: SendMessageFn = StubControllerDelegate::send_message;
     let _: fn(
         &StubControllerDelegate,
         &WebExtensionController,

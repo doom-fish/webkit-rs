@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.2.3] - 2026-05-17
+
+### Added
+
+- Added `AttributedString` HTML-loading helpers, `AttributedStringLoadOptions`, and the `READ_ACCESS_URL_DOCUMENT_OPTION` / `AttributedStringCompletionHandler` surface for the `NSAttributedString` WebKit additions.
+- Added typed `WebKitErrorCode`, `DownloadRedirectPolicy`, `OpenPanelParameters`, `SecurityOrigin`, `WindowFeatures`, `MediaCaptureType`, `PermissionDecision`, `MediaPlaybackState`, `MediaCaptureState`, `FullscreenState`, `WebViewDataType`, `AudiovisualMediaTypes`, and `UserInterfaceDirectionPolicy` wrappers.
+- Added reply-capable script message handling via `WebViewConfiguration::add_message_handler_with_reply` and `WebView::set_message_handler_with_reply`.
+- Added WebView helpers for AppKit IBAction navigation, text-finder actions, media playback / capture state, and macOS 26 web-view data import / export.
+- Added focused tests for the newly wrapped symbol families and pushed `COVERAGE_AUDIT.md` to 100%.
+
+### Changed
+
+- Bumped the crate version from `0.2.2` to `0.2.3`.
+- Refreshed the coverage docs to reflect the closed gaps and typed delegate event details.
+
 ## [0.2.2] - 2026-05-17
 
 ### Added

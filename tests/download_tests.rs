@@ -6,9 +6,26 @@ use std::time::{Duration, Instant};
 use webkit::prelude::*;
 
 #[test]
+fn download_redirect_policy_is_typed() {
+    assert_eq!(
+        DownloadRedirectPolicy::from_raw(0),
+        DownloadRedirectPolicy::Cancel
+    );
+    assert_eq!(
+        DownloadRedirectPolicy::from_raw(1),
+        DownloadRedirectPolicy::Allow
+    );
+    assert_eq!(DownloadRedirectPolicy::Allow.as_raw(), 1);
+
+    let _: fn(&Download, DownloadRedirectPolicy) = Download::set_redirect_policy;
+    let _: fn(&Download) -> DownloadRedirectPolicy = Download::redirect_policy;
+}
+
+#[test]
 #[ignore = "WKDownload smoke tests must run on the process main thread; examples cover live validation"]
 fn download_finishes_against_local_attachment_server() -> Result<(), Box<dyn std::error::Error>> {
-    let download_dir = common::artifact_dir("test-downloads")?.join(format!("run-{}", std::process::id()));
+    let download_dir =
+        common::artifact_dir("test-downloads")?.join(format!("run-{}", std::process::id()));
     if download_dir.exists() {
         fs::remove_dir_all(&download_dir)?;
     }

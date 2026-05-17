@@ -7,6 +7,7 @@
     clippy::module_name_repetitions
 )]
 
+pub mod attributed_string;
 pub mod back_forward_list;
 pub mod config;
 pub mod content_rule_list_store;
@@ -30,12 +31,16 @@ pub mod web_extension;
 pub mod website_data_store;
 pub mod webview;
 
+pub use attributed_string::{
+    AttributedString, AttributedStringCompletionHandler, AttributedStringLoadOptions,
+    HtmlLoadRequest, READ_ACCESS_URL_DOCUMENT_OPTION,
+};
 pub use back_forward_list::{BackForwardList, BackForwardListItem};
-pub use config::WebViewConfiguration;
+pub use config::{AudiovisualMediaTypes, UserInterfaceDirectionPolicy, WebViewConfiguration};
 pub use content_rule_list_store::{ContentRuleList, ContentRuleListStore};
-pub use download::{Download, DownloadEvent};
-pub use error::WebKitError;
-pub use find::{FindConfiguration, FindResult};
+pub use download::{Download, DownloadEvent, DownloadRedirectPolicy};
+pub use error::{WebKitError, WebKitErrorCode, WEBKIT_ERROR_DOMAIN};
+pub use find::{FindConfiguration, FindResult, TextFinderAction};
 pub use geometry::Rect;
 pub use http_cookie_store::{Cookie, CookiePolicy, CookieStoreEvent, HttpCookieStore};
 pub use navigation::Navigation;
@@ -47,7 +52,10 @@ pub use pdf_configuration::PDFConfiguration;
 pub use preferences::{InactiveSchedulingPolicy, Preferences, UpgradeToHTTPSPolicy};
 pub use script_message_handler::ScriptMessage;
 pub use snapshot_configuration::SnapshotConfiguration;
-pub use ui_delegate::{UIDelegateConfig, UIDelegateEvent};
+pub use ui_delegate::{
+    MediaCaptureType, OpenPanelParameters, PermissionDecision, SecurityOrigin, UIDelegateConfig,
+    UIDelegateEvent, UIDelegateEventDetail, WindowFeatures,
+};
 pub use url_scheme::{UrlSchemeHandler, UrlSchemeRequest, UrlSchemeResponse, UrlSchemeTask};
 pub use user_script::{InjectionTime, UserScript};
 pub use web_extension::{
@@ -66,15 +74,23 @@ pub use web_extension::{
     WebExtensionWindowHandle, WebExtensionWindowState, WebExtensionWindowType,
 };
 pub use website_data_store::{WebsiteDataRecord, WebsiteDataStore, WebsiteDataType};
-pub use webview::WebView;
+pub use webview::{
+    FullscreenState, MediaCaptureState, MediaPlaybackState, WebView, WebViewDataType,
+};
 
 pub mod prelude {
+    pub use crate::attributed_string::{
+        AttributedString, AttributedStringCompletionHandler, AttributedStringLoadOptions,
+        HtmlLoadRequest, READ_ACCESS_URL_DOCUMENT_OPTION,
+    };
     pub use crate::back_forward_list::{BackForwardList, BackForwardListItem};
-    pub use crate::config::WebViewConfiguration;
+    pub use crate::config::{
+        AudiovisualMediaTypes, UserInterfaceDirectionPolicy, WebViewConfiguration,
+    };
     pub use crate::content_rule_list_store::{ContentRuleList, ContentRuleListStore};
-    pub use crate::download::{Download, DownloadEvent};
-    pub use crate::error::WebKitError;
-    pub use crate::find::{FindConfiguration, FindResult};
+    pub use crate::download::{Download, DownloadEvent, DownloadRedirectPolicy};
+    pub use crate::error::{WebKitError, WebKitErrorCode, WEBKIT_ERROR_DOMAIN};
+    pub use crate::find::{FindConfiguration, FindResult, TextFinderAction};
     pub use crate::geometry::Rect;
     pub use crate::http_cookie_store::{Cookie, CookiePolicy, CookieStoreEvent, HttpCookieStore};
     pub use crate::navigation::Navigation;
@@ -87,7 +103,10 @@ pub mod prelude {
     pub use crate::preferences::{InactiveSchedulingPolicy, Preferences, UpgradeToHTTPSPolicy};
     pub use crate::script_message_handler::ScriptMessage;
     pub use crate::snapshot_configuration::SnapshotConfiguration;
-    pub use crate::ui_delegate::{UIDelegateConfig, UIDelegateEvent};
+    pub use crate::ui_delegate::{
+        MediaCaptureType, OpenPanelParameters, PermissionDecision, SecurityOrigin,
+        UIDelegateConfig, UIDelegateEvent, UIDelegateEventDetail, WindowFeatures,
+    };
     pub use crate::url_scheme::{
         UrlSchemeHandler, UrlSchemeRequest, UrlSchemeResponse, UrlSchemeTask,
     };
@@ -110,7 +129,9 @@ pub mod prelude {
         WebExtensionWindowType,
     };
     pub use crate::website_data_store::{WebsiteDataRecord, WebsiteDataStore, WebsiteDataType};
-    pub use crate::webview::WebView;
+    pub use crate::webview::{
+        FullscreenState, MediaCaptureState, MediaPlaybackState, WebView, WebViewDataType,
+    };
 }
 
 /// Pump the main run loop for the given duration.

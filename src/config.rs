@@ -1,12 +1,75 @@
 use core::ffi::c_void;
 use core::ptr;
 
+use std::ops::{BitOr, BitOrAssign};
+
 use crate::content_rule_list_store::ContentRuleList;
 use crate::ffi;
 use crate::preferences::Preferences;
 use crate::private::{take_json_or_default, to_cstring, to_json_cstring};
 use crate::user_script::UserScript;
 use crate::website_data_store::WebsiteDataStore;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(i32)]
+pub enum UserInterfaceDirectionPolicy {
+    Content = 0,
+    System = 1,
+}
+
+impl UserInterfaceDirectionPolicy {
+    #[must_use]
+    pub const fn as_raw(self) -> i32 {
+        self as i32
+    }
+
+    #[must_use]
+    pub const fn from_raw(raw: i32) -> Self {
+        match raw {
+            1 => Self::System,
+            _ => Self::Content,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct AudiovisualMediaTypes(u64);
+
+impl AudiovisualMediaTypes {
+    pub const NONE: Self = Self(0);
+    pub const AUDIO: Self = Self(1 << 0);
+    pub const VIDEO: Self = Self(1 << 1);
+    pub const ALL: Self = Self(u64::MAX);
+
+    #[must_use]
+    pub const fn from_bits(bits: u64) -> Self {
+        Self(bits)
+    }
+
+    #[must_use]
+    pub const fn bits(self) -> u64 {
+        self.0
+    }
+
+    #[must_use]
+    pub const fn contains(self, other: Self) -> bool {
+        (self.0 & other.0) == other.0
+    }
+}
+
+impl BitOr for AudiovisualMediaTypes {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Self(self.0 | rhs.0)
+    }
+}
+
+impl BitOrAssign for AudiovisualMediaTypes {
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.0 |= rhs.0;
+    }
+}
 
 /// Wrapper around `WKWebViewConfiguration`.
 pub struct WebViewConfiguration(*mut c_void);
@@ -62,6 +125,36 @@ impl WebViewConfiguration {
         unsafe { ffi::wk_config_get_allows_airplay(self.0) }
     }
 
+    pub fn set_media_types_requiring_user_action_for_playback(
+        &self,
+        media_types: AudiovisualMediaTypes,
+    ) {
+        unsafe {
+            ffi::wk_config_set_media_types_requiring_user_action_for_playback(
+                self.0,
+                media_types.bits(),
+            );
+        }
+    }
+
+    #[must_use]
+    pub fn media_types_requiring_user_action_for_playback(&self) -> AudiovisualMediaTypes {
+        AudiovisualMediaTypes::from_bits(unsafe {
+            ffi::wk_config_get_media_types_requiring_user_action_for_playback(self.0)
+        })
+    }
+
+    pub fn set_user_interface_direction_policy(&self, policy: UserInterfaceDirectionPolicy) {
+        unsafe { ffi::wk_config_set_user_interface_direction_policy(self.0, policy.as_raw()) }
+    }
+
+    #[must_use]
+    pub fn user_interface_direction_policy(&self) -> UserInterfaceDirectionPolicy {
+        UserInterfaceDirectionPolicy::from_raw(unsafe {
+            ffi::wk_config_get_user_interface_direction_policy(self.0)
+        })
+    }
+
     pub fn set_allows_content_javascript(&self, value: bool) {
         unsafe { ffi::wk_config_set_allows_content_javascript(self.0, value) }
     }
@@ -101,7 +194,9 @@ impl WebViewConfiguration {
     pub fn add_user_script(&self, script: &UserScript) {
         let source = to_cstring(&script.source);
         let content_world = script.content_world.as_deref().map(to_cstring);
-        let content_world_ptr = content_world.as_ref().map_or(ptr::null(), |name| name.as_ptr());
+        let content_world_ptr = content_world
+            .as_ref()
+            .map_or(ptr::null(), |name| name.as_ptr());
         unsafe {
             ffi::wk_config_add_user_script(
                 self.0,
@@ -135,6 +230,13 @@ impl WebViewConfiguration {
     pub fn add_message_handler(&self, name: &str) {
         let c_name = to_cstring(name);
         unsafe { ffi::wk_config_add_message_handler_name(self.0, c_name.as_ptr()) }
+    }
+
+    /// Register a reply-capable message handler name so JavaScript can await the
+    /// Promise returned by `postMessage(...)`.
+    pub fn add_message_handler_with_reply(&self, name: &str) {
+        let c_name = to_cstring(name);
+        unsafe { ffi::wk_config_add_message_handler_with_reply_name(self.0, c_name.as_ptr()) }
     }
 }
 

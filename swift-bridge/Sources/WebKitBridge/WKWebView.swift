@@ -6,20 +6,34 @@ final class WKWebViewBox: NSObject {
     let webView: WKWebView
     let navDelegate: WKRustNavDelegate
     let msgHandler: WKRustMessageHandler
+    let replyMsgHandler: WKRustReplyMessageHandler?
     let uiDelegate: WKRustUIDelegate
     let handlerNames: [String]
+    let replyHandlerNames: [String]
 
-    init(configuration: WKWebViewConfiguration, handlerNames: [String]) {
+    init(configuration: WKWebViewConfiguration, handlerNames: [String], replyHandlerNames: [String]) {
         self.handlerNames = handlerNames
+        self.replyHandlerNames = replyHandlerNames
         let navDelegate = WKRustNavDelegate()
         let msgHandler = WKRustMessageHandler()
+        let replyMsgHandler: WKRustReplyMessageHandler? = if #available(macOS 11.0, *) {
+            WKRustReplyMessageHandler()
+        } else {
+            nil
+        }
         let uiDelegate = WKRustUIDelegate()
         self.navDelegate = navDelegate
         self.msgHandler = msgHandler
+        self.replyMsgHandler = replyMsgHandler
         self.uiDelegate = uiDelegate
 
         for handlerName in handlerNames {
             configuration.userContentController.add(msgHandler, name: handlerName)
+        }
+        if let replyMsgHandler {
+            for handlerName in replyHandlerNames {
+                configuration.userContentController.addScriptMessageHandler(replyMsgHandler, contentWorld: .page, name: handlerName)
+            }
         }
 
         let initialFrame = CGRect(x: 0, y: 0, width: 800, height: 600)
@@ -35,6 +49,11 @@ final class WKWebViewBox: NSObject {
     deinit {
         for handlerName in handlerNames {
             webView.configuration.userContentController.removeScriptMessageHandler(forName: handlerName)
+        }
+        if #available(macOS 11.0, *) {
+            for handlerName in replyHandlerNames {
+                webView.configuration.userContentController.removeScriptMessageHandler(forName: handlerName, contentWorld: .page)
+            }
         }
     }
 
@@ -222,17 +241,26 @@ final class WKWebViewBox: NSObject {
 public func wk_webview_new(_ cfgPtr: UnsafeMutableRawPointer?) -> UnsafeMutableRawPointer {
     let configuration: WKWebViewConfiguration
     let handlerNames: [String]
+    let replyHandlerNames: [String]
 
     if let cfgPtr {
         let box: WKConfigBox = wkBorrow(cfgPtr)
         configuration = box.config
         handlerNames = box.registeredHandlerNames
+        replyHandlerNames = box.registeredReplyHandlerNames
     } else {
         configuration = WKWebViewConfiguration()
         handlerNames = []
+        replyHandlerNames = []
     }
 
-    return wkRetain(WKWebViewBox(configuration: configuration, handlerNames: handlerNames))
+    return wkRetain(
+        WKWebViewBox(
+            configuration: configuration,
+            handlerNames: handlerNames,
+            replyHandlerNames: replyHandlerNames
+        )
+    )
 }
 
 @_cdecl("wk_webview_release")
@@ -263,6 +291,18 @@ public func wk_webview_set_msg_callback(
     let box: WKWebViewBox = wkBorrow(ptr)
     box.msgHandler.callback = callback
     box.msgHandler.userInfo = userInfo
+}
+
+@_cdecl("wk_webview_set_msg_reply_callback")
+public func wk_webview_set_msg_reply_callback(
+    _ ptr: UnsafeMutableRawPointer?,
+    _ callback: WKMsgReplyCallback?,
+    _ userInfo: UnsafeMutableRawPointer?
+) {
+    guard let ptr else { return }
+    let box: WKWebViewBox = wkBorrow(ptr)
+    box.replyMsgHandler?.callback = callback
+    box.replyMsgHandler?.userInfo = userInfo
 }
 
 @_cdecl("wk_webview_set_navigation_delegate_config")
@@ -483,6 +523,84 @@ public func wk_webview_stop_loading(_ ptr: UnsafeMutableRawPointer?) {
     }
 }
 
+@_cdecl("wk_webview_perform_go_back_action")
+public func wk_webview_perform_go_back_action(_ ptr: UnsafeMutableRawPointer?) {
+    guard let ptr else { return }
+    let box: WKWebViewBox = wkBorrow(ptr)
+    wkOnMain {
+        box.webView.goBack(nil)
+    }
+}
+
+@_cdecl("wk_webview_perform_go_forward_action")
+public func wk_webview_perform_go_forward_action(_ ptr: UnsafeMutableRawPointer?) {
+    guard let ptr else { return }
+    let box: WKWebViewBox = wkBorrow(ptr)
+    wkOnMain {
+        box.webView.goForward(nil)
+    }
+}
+
+@_cdecl("wk_webview_perform_reload_action")
+public func wk_webview_perform_reload_action(_ ptr: UnsafeMutableRawPointer?) {
+    guard let ptr else { return }
+    let box: WKWebViewBox = wkBorrow(ptr)
+    wkOnMain {
+        box.webView.reload(nil)
+    }
+}
+
+@_cdecl("wk_webview_perform_reload_from_origin_action")
+public func wk_webview_perform_reload_from_origin_action(_ ptr: UnsafeMutableRawPointer?) {
+    guard let ptr else { return }
+    let box: WKWebViewBox = wkBorrow(ptr)
+    wkOnMain {
+        box.webView.reloadFromOrigin(nil)
+    }
+}
+
+@_cdecl("wk_webview_perform_stop_loading_action")
+public func wk_webview_perform_stop_loading_action(_ ptr: UnsafeMutableRawPointer?) {
+    guard let ptr else { return }
+    let box: WKWebViewBox = wkBorrow(ptr)
+    wkOnMain {
+        box.webView.stopLoading(nil)
+    }
+}
+
+@_cdecl("wk_webview_validate_text_finder_action")
+public func wk_webview_validate_text_finder_action(
+    _ ptr: UnsafeMutableRawPointer?,
+    _ action: Int32
+) -> Bool {
+    guard let ptr else { return false }
+    let box: WKWebViewBox = wkBorrow(ptr)
+    return wkOnMain {
+        let finder = NSTextFinder()
+        finder.client = box.webView
+        guard let action = NSTextFinder.Action(rawValue: Int(action)) else {
+            return false
+        }
+        return finder.validateAction(action)
+    }
+}
+
+@_cdecl("wk_webview_perform_text_finder_action")
+public func wk_webview_perform_text_finder_action(
+    _ ptr: UnsafeMutableRawPointer?,
+    _ action: Int32
+) {
+    guard let ptr else { return }
+    let box: WKWebViewBox = wkBorrow(ptr)
+    wkOnMain {
+        let finder = NSTextFinder()
+        finder.client = box.webView
+        if let action = NSTextFinder.Action(rawValue: Int(action)) {
+            finder.performAction(action)
+        }
+    }
+}
+
 @_cdecl("wk_webview_go_to_back_forward_index")
 public func wk_webview_go_to_back_forward_index(
     _ ptr: UnsafeMutableRawPointer?,
@@ -655,6 +773,202 @@ public func wk_webview_get_inspectable(_ ptr: UnsafeMutableRawPointer?) -> Bool 
         }
         return false
     }
+}
+
+@_cdecl("wk_webview_request_media_playback_state")
+public func wk_webview_request_media_playback_state(
+    _ ptr: UnsafeMutableRawPointer?,
+    _ outState: UnsafeMutablePointer<Int32>?,
+    _ outErr: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> Int32 {
+    guard let ptr else {
+        outErr?.pointee = wkCString("missing webview")
+        return WK_INVALID_ARGUMENT
+    }
+    let box: WKWebViewBox = wkBorrow(ptr)
+    let (status, state, error): (Int32, Int32?, String?) = wkWaitForAsync { completion in
+        DispatchQueue.main.async {
+            if #available(macOS 12.0, *) {
+                box.webView.requestMediaPlaybackState { state in
+                    completion(Int32(state.rawValue), nil)
+                }
+            } else {
+                completion(nil, "media playback state requires macOS 12.0")
+            }
+        }
+    }
+    if let error {
+        outErr?.pointee = wkCString(error)
+        return status
+    }
+    outState?.pointee = state ?? 0
+    return status
+}
+
+@_cdecl("wk_webview_get_camera_capture_state")
+public func wk_webview_get_camera_capture_state(_ ptr: UnsafeMutableRawPointer?) -> Int32 {
+    guard let ptr else { return 0 }
+    let box: WKWebViewBox = wkBorrow(ptr)
+    return wkOnMain {
+        if #available(macOS 12.0, *) {
+            return Int32(box.webView.cameraCaptureState.rawValue)
+        }
+        return 0
+    }
+}
+
+@_cdecl("wk_webview_get_microphone_capture_state")
+public func wk_webview_get_microphone_capture_state(_ ptr: UnsafeMutableRawPointer?) -> Int32 {
+    guard let ptr else { return 0 }
+    let box: WKWebViewBox = wkBorrow(ptr)
+    return wkOnMain {
+        if #available(macOS 12.0, *) {
+            return Int32(box.webView.microphoneCaptureState.rawValue)
+        }
+        return 0
+    }
+}
+
+@_cdecl("wk_webview_set_camera_capture_state")
+public func wk_webview_set_camera_capture_state(
+    _ ptr: UnsafeMutableRawPointer?,
+    _ rawValue: Int32,
+    _ outErr: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> Int32 {
+    guard let ptr else {
+        outErr?.pointee = wkCString("missing webview")
+        return WK_INVALID_ARGUMENT
+    }
+    let box: WKWebViewBox = wkBorrow(ptr)
+    let (status, _, error): (Int32, Bool?, String?) = wkWaitForAsync { completion in
+        DispatchQueue.main.async {
+            if #available(macOS 12.0, *), let state = WKMediaCaptureState(rawValue: Int(rawValue)) {
+                box.webView.setCameraCaptureState(state) {
+                    completion(true, nil)
+                }
+            } else {
+                completion(nil, "camera capture state requires macOS 12.0")
+            }
+        }
+    }
+    if let error {
+        outErr?.pointee = wkCString(error)
+    }
+    return status
+}
+
+@_cdecl("wk_webview_set_microphone_capture_state")
+public func wk_webview_set_microphone_capture_state(
+    _ ptr: UnsafeMutableRawPointer?,
+    _ rawValue: Int32,
+    _ outErr: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> Int32 {
+    guard let ptr else {
+        outErr?.pointee = wkCString("missing webview")
+        return WK_INVALID_ARGUMENT
+    }
+    let box: WKWebViewBox = wkBorrow(ptr)
+    let (status, _, error): (Int32, Bool?, String?) = wkWaitForAsync { completion in
+        DispatchQueue.main.async {
+            if #available(macOS 12.0, *), let state = WKMediaCaptureState(rawValue: Int(rawValue)) {
+                box.webView.setMicrophoneCaptureState(state) {
+                    completion(true, nil)
+                }
+            } else {
+                completion(nil, "microphone capture state requires macOS 12.0")
+            }
+        }
+    }
+    if let error {
+        outErr?.pointee = wkCString(error)
+    }
+    return status
+}
+
+@_cdecl("wk_webview_get_fullscreen_state")
+public func wk_webview_get_fullscreen_state(_ ptr: UnsafeMutableRawPointer?) -> Int32 {
+    guard let ptr else { return 0 }
+    let box: WKWebViewBox = wkBorrow(ptr)
+    return wkOnMain {
+        if #available(macOS 13.0, *) {
+            return Int32(box.webView.fullscreenState.rawValue)
+        }
+        return 0
+    }
+}
+
+@_cdecl("wk_webview_fetch_data_of_types")
+public func wk_webview_fetch_data_of_types(
+    _ ptr: UnsafeMutableRawPointer?,
+    _ dataTypes: UInt64,
+    _ outBytes: UnsafeMutablePointer<UnsafeMutablePointer<UInt8>?>?,
+    _ outLen: UnsafeMutablePointer<Int>?,
+    _ outErr: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> Int32 {
+    guard let ptr else {
+        outErr?.pointee = wkCString("missing webview")
+        return WK_INVALID_ARGUMENT
+    }
+    guard #available(macOS 26.0, *) else {
+        outErr?.pointee = wkCString("web view data export requires macOS 26.0")
+        return WK_UNSUPPORTED
+    }
+    let box: WKWebViewBox = wkBorrow(ptr)
+    let (status, data, error): (Int32, Data?, String?) = wkWaitForAsync { completion in
+        DispatchQueue.main.async {
+            box.webView.fetchData(of: WKWebViewDataType(rawValue: UInt(dataTypes))) { data, error in
+                if let error {
+                    completion(nil, error.localizedDescription)
+                } else {
+                    completion(data, nil)
+                }
+            }
+        }
+    }
+    if let error {
+        outErr?.pointee = wkCString(error)
+        return status
+    }
+    if let data {
+        wkSetBytes(data, outBytes, outLen)
+        return status
+    }
+    outErr?.pointee = wkCString("web view data export returned no data")
+    return WK_UNKNOWN
+}
+
+@_cdecl("wk_webview_restore_data")
+public func wk_webview_restore_data(
+    _ ptr: UnsafeMutableRawPointer?,
+    _ bytes: UnsafePointer<UInt8>?,
+    _ len: Int,
+    _ outErr: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> Int32 {
+    guard let ptr, let bytes else {
+        outErr?.pointee = wkCString("missing webview or data")
+        return WK_INVALID_ARGUMENT
+    }
+    guard #available(macOS 26.0, *) else {
+        outErr?.pointee = wkCString("web view data restore requires macOS 26.0")
+        return WK_UNSUPPORTED
+    }
+    let box: WKWebViewBox = wkBorrow(ptr)
+    let data = Data(bytes: bytes, count: len)
+    let (status, _, error): (Int32, Bool?, String?) = wkWaitForAsync { completion in
+        DispatchQueue.main.async {
+            box.webView.restoreData(data) { error in
+                if let error {
+                    completion(nil, error.localizedDescription)
+                } else {
+                    completion(true, nil)
+                }
+            }
+        }
+    }
+    if let error {
+        outErr?.pointee = wkCString(error)
+    }
+    return status
 }
 
 @_cdecl("wk_webview_evaluate_js")

@@ -3,6 +3,7 @@ import WebKit
 
 final class WKRustDownloadDelegate: NSObject, WKDownloadDelegate {
     var destinationDirectory: String
+    var redirectPolicy: WKDownload.RedirectPolicy = .allow
     var events: [[String: Any]] = []
     var finalDestinationPath: String?
     var lastResumeData: Data?
@@ -83,7 +84,7 @@ final class WKRustDownloadDelegate: NSObject, WKDownloadDelegate {
             "statusCode": response.statusCode,
             "url": request.url?.absoluteString ?? ""
         ])
-        decisionHandler(.allow)
+        decisionHandler(redirectPolicy)
     }
 }
 
@@ -127,6 +128,27 @@ public func wk_download_copy_events_json(_ ptr: UnsafeMutableRawPointer?) -> Uns
     guard let ptr else { return wkCString("[]") }
     let box: WKDownloadBox = wkBorrow(ptr)
     return box.delegate.drainEvents()
+}
+
+@_cdecl("wk_download_set_redirect_policy")
+public func wk_download_set_redirect_policy(_ ptr: UnsafeMutableRawPointer?, _ rawValue: Int32) {
+    guard let ptr else { return }
+    let box: WKDownloadBox = wkBorrow(ptr)
+    box.delegate.redirectPolicy = rawValue == 0 ? .cancel : .allow
+}
+
+@_cdecl("wk_download_get_redirect_policy")
+public func wk_download_get_redirect_policy(_ ptr: UnsafeMutableRawPointer?) -> Int32 {
+    guard let ptr else { return 1 }
+    let box: WKDownloadBox = wkBorrow(ptr)
+    switch box.delegate.redirectPolicy {
+    case .cancel:
+        return 0
+    case .allow:
+        return 1
+    @unknown default:
+        return 1
+    }
 }
 
 @_cdecl("wk_download_cancel")

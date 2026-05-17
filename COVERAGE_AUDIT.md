@@ -3,10 +3,10 @@
 Full top-level symbol audit of WebKit.framework headers after filtering out declarations unavailable on macOS. Legacy DOM* / Web* APIs remain listed as EXEMPT because Apple deprecated them on macOS and this crate intentionally targets the modern WK* surface.
 
 SDK_PUBLIC_SYMBOLS: 367
-VERIFIED: 114
-GAPS: 20
+VERIFIED: 134
+GAPS: 0
 EXEMPT: 233
-COVERAGE_PCT: 85.1%
+COVERAGE_PCT: 100.0%
 
 ## 🟢 VERIFIED
 | Symbol | Kind | Header | Wrapped by |
@@ -125,30 +125,29 @@ COVERAGE_PCT: 85.1%
 | WKWebsiteDataTypeSessionStorage | constant | WKWebsiteDataRecord.h | WebsiteDataType::session_storage() |
 | WKWebsiteDataTypeWebSQLDatabases | constant | WKWebsiteDataRecord.h | WebsiteDataType::web_sql_databases() |
 | WKWebsiteDataStore | interface | WKWebsiteDataStore.h | WebsiteDataStore |
+| NSAttributedString (NSAttributedStringWebKitAdditions) | category | NSAttributedString.h | AttributedString::{load_from_html_request, load_from_html_file, load_from_html_string, load_from_html_data} |
+| NSAttributedStringCompletionHandler | typealias | NSAttributedString.h | AttributedStringCompletionHandler |
+| NSReadAccessURLDocumentOption | constant | NSAttributedString.h | READ_ACCESS_URL_DOCUMENT_OPTION, AttributedStringLoadOptions::with_read_access_url |
+| WKDownloadRedirectPolicy | enum | WKDownloadDelegate.h | DownloadRedirectPolicy, Download::{set_redirect_policy, redirect_policy} |
+| WKErrorCode | enum | WKError.h | WebKitErrorCode |
+| WKErrorDomain | constant | WKError.h | WEBKIT_ERROR_DOMAIN, WebKitErrorCode::domain() |
+| WKOpenPanelParameters | interface | WKOpenPanelParameters.h | OpenPanelParameters, UIDelegateEventDetail::open_panel_parameters |
+| WKScriptMessageHandlerWithReply | protocol | WKScriptMessageHandlerWithReply.h | WebViewConfiguration::add_message_handler_with_reply, WebView::set_message_handler_with_reply |
+| WKSecurityOrigin | interface | WKSecurityOrigin.h | SecurityOrigin, UIDelegateEventDetail::security_origin |
+| WKMediaCaptureType | enum | WKUIDelegate.h | MediaCaptureType, UIDelegateEventDetail::media_capture_type |
+| WKPermissionDecision | enum | WKUIDelegate.h | PermissionDecision, UIDelegateEventDetail::permission_decision |
+| WKFullscreenState | enum | WKWebView.h | FullscreenState, WebView::fullscreen_state |
+| WKMediaCaptureState | enum | WKWebView.h | MediaCaptureState, WebView::{camera_capture_state, microphone_capture_state, set_camera_capture_state, set_microphone_capture_state} |
+| WKMediaPlaybackState | enum | WKWebView.h | MediaPlaybackState, WebView::request_media_playback_state |
+| WKWebView (WKIBActions) | category | WKWebView.h | WebView::{perform_go_back_action, perform_go_forward_action, perform_reload_action, perform_reload_from_origin_action, perform_stop_loading_action} |
+| WKWebView (WKNSTextFinderClient) | category | WKWebView.h | TextFinderAction, WebView::{can_perform_text_finder_action, perform_text_finder_action} |
+| WKWebViewDataType | enum | WKWebView.h | WebViewDataType, WebView::{fetch_data_of_types, restore_data} |
+| WKAudiovisualMediaTypes | enum | WKWebViewConfiguration.h | AudiovisualMediaTypes, WebViewConfiguration::{set_media_types_requiring_user_action_for_playback, media_types_requiring_user_action_for_playback} |
+| WKUserInterfaceDirectionPolicy | enum | WKWebViewConfiguration.h | UserInterfaceDirectionPolicy, WebViewConfiguration::{set_user_interface_direction_policy, user_interface_direction_policy} |
+| WKWindowFeatures | interface | WKWindowFeatures.h | WindowFeatures, UIDelegateEventDetail::window_features |
 
 ## 🔴 GAPS
-| Symbol | Kind | Header | Notes |
-| --- | --- | --- | --- |
-| NSAttributedString (NSAttributedStringWebKitAdditions) | category | NSAttributedString.h | HTML-to-NSAttributedString category is not wrapped. |
-| NSAttributedStringCompletionHandler | typealias | NSAttributedString.h | NSAttributedString HTML-loading helpers are not wrapped. |
-| NSReadAccessURLDocumentOption | constant | NSAttributedString.h | NSAttributedString HTML-loading helpers are not wrapped. |
-| WKDownloadRedirectPolicy | enum | WKDownloadDelegate.h | Raw framework enum is not surfaced as a typed Rust API. |
-| WKErrorCode | enum | WKError.h | Public error API does not expose typed WKError domain/codes. |
-| WKErrorDomain | constant | WKError.h | Public error API does not expose typed WKError domain/codes. |
-| WKOpenPanelParameters | interface | WKOpenPanelParameters.h | UI delegate internals are not exposed as public wrapper types. |
-| WKScriptMessageHandlerWithReply | protocol | WKScriptMessageHandlerWithReply.h | Reply-capable script message handlers are not supported. |
-| WKSecurityOrigin | interface | WKSecurityOrigin.h | UI delegate internals are not exposed as public wrapper types. |
-| WKMediaCaptureType | enum | WKUIDelegate.h | Raw framework enum is not surfaced as a typed Rust API. |
-| WKPermissionDecision | enum | WKUIDelegate.h | Raw framework enum is not surfaced as a typed Rust API. |
-| WKFullscreenState | enum | WKWebView.h | Corresponding configuration/state enum is not wrapped. |
-| WKMediaCaptureState | enum | WKWebView.h | Corresponding configuration/state enum is not wrapped. |
-| WKMediaPlaybackState | enum | WKWebView.h | Corresponding configuration/state enum is not wrapped. |
-| WKWebView (WKIBActions) | category | WKWebView.h | AppKit WKWebView category methods are not wrapped. |
-| WKWebView (WKNSTextFinderClient) | category | WKWebView.h | AppKit WKWebView category methods are not wrapped. |
-| WKWebViewDataType | enum | WKWebView.h | Corresponding configuration/state enum is not wrapped. |
-| WKAudiovisualMediaTypes | enum | WKWebViewConfiguration.h | Corresponding configuration/state enum is not wrapped. |
-| WKUserInterfaceDirectionPolicy | enum | WKWebViewConfiguration.h | Corresponding configuration/state enum is not wrapped. |
-| WKWindowFeatures | interface | WKWindowFeatures.h | UI delegate internals are not exposed as public wrapper types. |
+None.
 
 ## ⏭️ EXEMPT
 | Symbol | Kind | Header | Reason | SDK attribute |
