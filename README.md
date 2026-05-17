@@ -2,7 +2,7 @@
 
 Safe Rust bindings for Apple's `WKWebView` APIs on macOS.
 
-> **Status:** v0.2.1 — expanded Swift-bridge coverage for find-in-page APIs, typed navigation delegate details, custom URL schemes, `WKWebExtension*`, upgraded webpage preference policies, and the existing `WKWebView` / storage / snapshot / download surface. See [`COVERAGE.md`](COVERAGE.md) for the audited SDK matrix.
+> **Status:** v0.2.2 — expanded the safe Rust surface with full `WKWebExtensionControllerDelegate` / `WKWebExtensionTab` / `WKWebExtensionWindow` trait coverage, alongside the existing `WKWebView`, storage, snapshot, download, URL-scheme, find, and `WKWebExtension*` wrappers. See [`COVERAGE.md`](COVERAGE.md) for the audited SDK matrix.
 
 ## Quick start
 
@@ -68,7 +68,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   - safe task request / response helpers
 - `WKWebExtension*`
   - extensions, contexts, controllers, match patterns, permissions, and data records
-  - notification names, permission / data-type constants, message-port helpers, and related value types
+  - `WKWebExtensionControllerDelegate`, `WKWebExtensionTab`, and `WKWebExtensionWindow` mirrored as Rust traits with forward-compatible defaults
+  - notification names, permission / data-type constants, message-port helpers, handle aliases, and related value types
 - Supporting types
   - `WKUserScript`
   - `WKNavigation`

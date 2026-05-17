@@ -19,16 +19,16 @@ pub mod http_cookie_store;
 pub mod navigation;
 pub mod navigation_delegate;
 pub mod pdf_configuration;
-mod private;
 pub mod preferences;
+mod private;
 pub mod script_message_handler;
 pub mod snapshot_configuration;
 pub mod ui_delegate;
 pub mod url_scheme;
 pub mod user_script;
 pub mod web_extension;
-pub mod webview;
 pub mod website_data_store;
+pub mod webview;
 
 pub use back_forward_list::{BackForwardList, BackForwardListItem};
 pub use config::WebViewConfiguration;
@@ -48,26 +48,25 @@ pub use preferences::{InactiveSchedulingPolicy, Preferences, UpgradeToHTTPSPolic
 pub use script_message_handler::ScriptMessage;
 pub use snapshot_configuration::SnapshotConfiguration;
 pub use ui_delegate::{UIDelegateConfig, UIDelegateEvent};
-pub use url_scheme::{
-    UrlSchemeHandler, UrlSchemeRequest, UrlSchemeResponse, UrlSchemeTask,
-};
+pub use url_scheme::{UrlSchemeHandler, UrlSchemeRequest, UrlSchemeResponse, UrlSchemeTask};
 pub use user_script::{InjectionTime, UserScript};
 pub use web_extension::{
-    NSErrorInfo, WebExtension, WebExtensionAction, WebExtensionCommand,
-    WebExtensionContext, WebExtensionContextError, WebExtensionContextNotificationUserInfoKey,
-    WebExtensionContextNotifications, WebExtensionContextPermissionStatus,
-    WebExtensionController, WebExtensionControllerConfiguration,
-    WebExtensionControllerConfigurationSummary, WebExtensionControllerDelegate,
-    WebExtensionDataRecord, WebExtensionDataRecordError, WebExtensionDataType,
-    WebExtensionError, WebExtensionMatchPattern, WebExtensionMatchPatternError,
-    WebExtensionMatchPatternOptions, WebExtensionMatchPatternSummary,
-    WebExtensionMessagePort, WebExtensionMessagePortError, WebExtensionPermission,
-    WebExtensionSummary, WebExtensionTab, WebExtensionTabChangedProperties,
-    WebExtensionTabConfiguration, WebExtensionWindow, WebExtensionWindowConfiguration,
-    WebExtensionWindowState, WebExtensionWindowType,
+    NSErrorInfo, WebExtension, WebExtensionAction, WebExtensionCommand, WebExtensionContext,
+    WebExtensionContextError, WebExtensionContextNotificationUserInfoKey,
+    WebExtensionContextNotifications, WebExtensionContextPermissionStatus, WebExtensionController,
+    WebExtensionControllerConfiguration, WebExtensionControllerConfigurationSummary,
+    WebExtensionControllerDelegate, WebExtensionDataRecord, WebExtensionDataRecordError,
+    WebExtensionDataType, WebExtensionError, WebExtensionGrant, WebExtensionMatchPattern,
+    WebExtensionMatchPatternError, WebExtensionMatchPatternGrant, WebExtensionMatchPatternOptions,
+    WebExtensionMatchPatternSummary, WebExtensionMessagePort, WebExtensionMessagePortError,
+    WebExtensionPermission, WebExtensionPermissionGrant, WebExtensionSize, WebExtensionSummary,
+    WebExtensionTab, WebExtensionTabChangedProperties, WebExtensionTabConfiguration,
+    WebExtensionTabHandle, WebExtensionTabSnapshot, WebExtensionUrlGrant,
+    WebExtensionWebViewHandle, WebExtensionWindow, WebExtensionWindowConfiguration,
+    WebExtensionWindowHandle, WebExtensionWindowState, WebExtensionWindowType,
 };
-pub use webview::WebView;
 pub use website_data_store::{WebsiteDataRecord, WebsiteDataStore, WebsiteDataType};
+pub use webview::WebView;
 
 pub mod prelude {
     pub use crate::back_forward_list::{BackForwardList, BackForwardListItem};
@@ -94,21 +93,24 @@ pub mod prelude {
     };
     pub use crate::user_script::{InjectionTime, UserScript};
     pub use crate::web_extension::{
-        NSErrorInfo, WebExtension, WebExtensionAction, WebExtensionCommand,
-        WebExtensionContext, WebExtensionContextError, WebExtensionContextNotificationUserInfoKey,
+        NSErrorInfo, WebExtension, WebExtensionAction, WebExtensionCommand, WebExtensionContext,
+        WebExtensionContextError, WebExtensionContextNotificationUserInfoKey,
         WebExtensionContextNotifications, WebExtensionContextPermissionStatus,
         WebExtensionController, WebExtensionControllerConfiguration,
         WebExtensionControllerConfigurationSummary, WebExtensionControllerDelegate,
         WebExtensionDataRecord, WebExtensionDataRecordError, WebExtensionDataType,
-        WebExtensionError, WebExtensionMatchPattern, WebExtensionMatchPatternError,
-        WebExtensionMatchPatternOptions, WebExtensionMatchPatternSummary,
-        WebExtensionMessagePort, WebExtensionMessagePortError, WebExtensionPermission,
-        WebExtensionSummary, WebExtensionTab, WebExtensionTabChangedProperties,
-        WebExtensionTabConfiguration, WebExtensionWindow, WebExtensionWindowConfiguration,
-        WebExtensionWindowState, WebExtensionWindowType,
+        WebExtensionError, WebExtensionGrant, WebExtensionMatchPattern,
+        WebExtensionMatchPatternError, WebExtensionMatchPatternGrant,
+        WebExtensionMatchPatternOptions, WebExtensionMatchPatternSummary, WebExtensionMessagePort,
+        WebExtensionMessagePortError, WebExtensionPermission, WebExtensionPermissionGrant,
+        WebExtensionSize, WebExtensionSummary, WebExtensionTab, WebExtensionTabChangedProperties,
+        WebExtensionTabConfiguration, WebExtensionTabHandle, WebExtensionTabSnapshot,
+        WebExtensionUrlGrant, WebExtensionWebViewHandle, WebExtensionWindow,
+        WebExtensionWindowConfiguration, WebExtensionWindowHandle, WebExtensionWindowState,
+        WebExtensionWindowType,
     };
-    pub use crate::webview::WebView;
     pub use crate::website_data_store::{WebsiteDataRecord, WebsiteDataStore, WebsiteDataType};
+    pub use crate::webview::WebView;
 }
 
 /// Pump the main run loop for the given duration.

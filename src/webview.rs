@@ -80,6 +80,8 @@ pub struct WebView {
 
 // SAFETY: The Swift bridge ensures all WebKit calls happen on the main thread.
 unsafe impl Send for WebView {}
+// SAFETY: The Swift bridge serialises all WebKit calls onto the main thread.
+unsafe impl Sync for WebView {}
 
 impl WebView {
     /// Create a new offscreen `WKWebView` with the default configuration.
@@ -128,7 +130,9 @@ impl WebView {
         F: Fn(NavigationEvent) + Send + 'static,
     {
         let holder = Box::new(NavCallbackHolder { f: Box::new(f) });
-        let user_info = std::ptr::from_ref(holder.as_ref()).cast_mut().cast::<c_void>();
+        let user_info = std::ptr::from_ref(holder.as_ref())
+            .cast_mut()
+            .cast::<c_void>();
         unsafe {
             ffi::wk_webview_set_nav_callback(
                 self.ptr,
@@ -145,7 +149,9 @@ impl WebView {
         F: Fn(&str, &str) + Send + 'static,
     {
         let holder = Box::new(MsgCallbackHolder { f: Box::new(f) });
-        let user_info = std::ptr::from_ref(holder.as_ref()).cast_mut().cast::<c_void>();
+        let user_info = std::ptr::from_ref(holder.as_ref())
+            .cast_mut()
+            .cast::<c_void>();
         unsafe {
             ffi::wk_webview_set_msg_callback(
                 self.ptr,
@@ -173,7 +179,9 @@ impl WebView {
 
     pub fn set_ui_delegate_config(&self, config: &UIDelegateConfig) {
         let prompt_response = config.prompt_response.as_deref().map(to_cstring);
-        let prompt_response_ptr = prompt_response.as_ref().map_or(ptr::null(), |value| value.as_ptr());
+        let prompt_response_ptr = prompt_response
+            .as_ref()
+            .map_or(ptr::null(), |value| value.as_ptr());
         unsafe {
             ffi::wk_webview_set_ui_delegate_config(
                 self.ptr,
@@ -361,7 +369,8 @@ impl WebView {
     #[must_use]
     pub fn reload_from_origin(&self) -> Option<Navigation> {
         let mut out_navigation: *mut c_void = ptr::null_mut();
-        let has_navigation = unsafe { ffi::wk_webview_reload_from_origin(self.ptr, &mut out_navigation) };
+        let has_navigation =
+            unsafe { ffi::wk_webview_reload_from_origin(self.ptr, &mut out_navigation) };
         if has_navigation {
             Navigation::from_ptr(out_navigation)
         } else {
@@ -423,7 +432,9 @@ impl WebView {
 
     #[must_use]
     pub fn back_forward_list(&self) -> BackForwardList {
-        unsafe { BackForwardList::from_json_ptr(ffi::wk_webview_copy_back_forward_list_json(self.ptr)) }
+        unsafe {
+            BackForwardList::from_json_ptr(ffi::wk_webview_copy_back_forward_list_json(self.ptr))
+        }
     }
 
     pub fn set_custom_user_agent(&self, value: Option<&str>) {
@@ -484,12 +495,7 @@ impl WebView {
         let mut out_result: *mut c_char = ptr::null_mut();
         let mut out_err: *mut c_char = ptr::null_mut();
         let status = unsafe {
-            ffi::wk_webview_evaluate_js(
-                self.ptr,
-                c_js.as_ptr(),
-                &mut out_result,
-                &mut out_err,
-            )
+            ffi::wk_webview_evaluate_js(self.ptr, c_js.as_ptr(), &mut out_result, &mut out_err)
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);
@@ -506,12 +512,7 @@ impl WebView {
         let mut out_result: *mut c_char = ptr::null_mut();
         let mut out_err: *mut c_char = ptr::null_mut();
         let status = unsafe {
-            ffi::wk_webview_call_async_js(
-                self.ptr,
-                c_js.as_ptr(),
-                &mut out_result,
-                &mut out_err,
-            )
+            ffi::wk_webview_call_async_js(self.ptr, c_js.as_ptr(), &mut out_result, &mut out_err)
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);

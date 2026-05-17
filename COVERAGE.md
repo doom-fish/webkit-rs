@@ -144,6 +144,13 @@ Legend:
 | Download delegate events (`decideDestination`, redirect, finish, fail`) | ✅ | Recorded as `DownloadEvent`s. |
 | Resume download / advanced session management | 🟡 | Not yet exposed. |
 
+## WKWebExtension*
+
+| API | Status | Notes |
+| --- | --- | --- |
+| `WKWebExtension`, `WKWebExtensionContext`, `WKWebExtensionController`, match patterns, message ports, permissions, and data records | ✅ | Safe wrappers and typed value models are exposed on the Rust side. |
+| `WKWebExtensionControllerDelegate`, `WKWebExtensionTab`, `WKWebExtensionWindow` | ✅ | Mirrored as Rust traits with forward-compatible default methods plus tab/window handle aliases, permission grants, size, and snapshot helper types. |
+
 ## WKBackForwardList / WKBackForwardListItem
 
 | API | Status | Notes |

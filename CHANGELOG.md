@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.2] - 2026-05-17
+
+### Added
+
+- Replaced the `WKWebExtensionControllerDelegate`, `WKWebExtensionTab`, and `WKWebExtensionWindow` marker traits with exhaustive Rust trait surfaces that mirror the macOS SDK protocols while keeping default method bodies for semver compatibility.
+- Added `WebExtensionGrant`, `WebExtension{Permission,Url,MatchPattern}Grant`, `WebExtensionSize`, `WebExtensionTabSnapshot`, and handle aliases for web-extension tab/window/webview references.
+- Added focused tests covering the new delegate trait signatures and helper types.
+
+### Changed
+
+- Bumped the crate version from `0.2.1` to `0.2.2`.
+- Refreshed the README to call out the completed `WKWebExtension*` delegate trait coverage.
+
 ## [0.2.1] - 2026-05-16
 
 ### Added

@@ -5,7 +5,7 @@ use core::ptr;
 use std::collections::BTreeMap;
 use std::ops::{BitOr, BitOrAssign};
 use std::path::Path;
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -14,8 +14,12 @@ use crate::config::WebViewConfiguration;
 use crate::error::WebKitError;
 use crate::ffi;
 use crate::geometry::Rect;
-use crate::private::{maybe_take_error, take_json_or_default, take_optional_string, to_cstring, to_json_cstring};
+use crate::private::{
+    maybe_take_error, take_json_or_default, take_optional_string, to_cstring, to_json_cstring,
+};
+use crate::snapshot_configuration::SnapshotConfiguration;
 use crate::website_data_store::WebsiteDataStore;
+use crate::webview::WebView;
 
 #[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -157,15 +161,27 @@ impl WebExtensionPermission {
     }
     #[must_use]
     pub fn declarative_net_request() -> Self {
-        Self(web_extension_constants().permission_declarative_net_request.clone())
+        Self(
+            web_extension_constants()
+                .permission_declarative_net_request
+                .clone(),
+        )
     }
     #[must_use]
     pub fn declarative_net_request_feedback() -> Self {
-        Self(web_extension_constants().permission_declarative_net_request_feedback.clone())
+        Self(
+            web_extension_constants()
+                .permission_declarative_net_request_feedback
+                .clone(),
+        )
     }
     #[must_use]
     pub fn declarative_net_request_with_host_access() -> Self {
-        Self(web_extension_constants().permission_declarative_net_request_with_host_access.clone())
+        Self(
+            web_extension_constants()
+                .permission_declarative_net_request_with_host_access
+                .clone(),
+        )
     }
     #[must_use]
     pub fn menus() -> Self {
@@ -173,7 +189,11 @@ impl WebExtensionPermission {
     }
     #[must_use]
     pub fn native_messaging() -> Self {
-        Self(web_extension_constants().permission_native_messaging.clone())
+        Self(
+            web_extension_constants()
+                .permission_native_messaging
+                .clone(),
+        )
     }
     #[must_use]
     pub fn scripting() -> Self {
@@ -189,7 +209,11 @@ impl WebExtensionPermission {
     }
     #[must_use]
     pub fn unlimited_storage() -> Self {
-        Self(web_extension_constants().permission_unlimited_storage.clone())
+        Self(
+            web_extension_constants()
+                .permission_unlimited_storage
+                .clone(),
+        )
     }
     #[must_use]
     pub fn web_navigation() -> Self {
@@ -219,11 +243,19 @@ impl WebExtensionDataType {
 impl WebExtensionContextNotificationUserInfoKey {
     #[must_use]
     pub fn permissions() -> Self {
-        Self(web_extension_constants().notification_user_info_key_permissions.clone())
+        Self(
+            web_extension_constants()
+                .notification_user_info_key_permissions
+                .clone(),
+        )
     }
     #[must_use]
     pub fn match_patterns() -> Self {
-        Self(web_extension_constants().notification_user_info_key_match_patterns.clone())
+        Self(
+            web_extension_constants()
+                .notification_user_info_key_match_patterns
+                .clone(),
+        )
     }
 }
 
@@ -244,7 +276,9 @@ pub enum WebExtensionError {
 impl WebExtensionError {
     #[must_use]
     pub fn domain() -> &'static str {
-        web_extension_constants().web_extension_error_domain.as_str()
+        web_extension_constants()
+            .web_extension_error_domain
+            .as_str()
     }
 }
 
@@ -373,14 +407,436 @@ pub enum WebExtensionWindowState {
     Fullscreen = 3,
 }
 
-/// Marker trait mirroring `WKWebExtensionControllerDelegate`.
-pub trait WebExtensionControllerDelegate: Send + Sync {}
+fn unsupported_web_extension_delegate_method(method: &str) -> WebKitError {
+    WebKitError::Unsupported(format!(
+        "web extension delegate method `{method}` is not implemented"
+    ))
+}
 
-/// Marker trait mirroring `WKWebExtensionTab`.
-pub trait WebExtensionTab: Send + Sync {}
+/// Result payload returned by permission-prompt style web extension delegate methods.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WebExtensionGrant<T> {
+    #[serde(default)]
+    pub allowed: Vec<T>,
+    pub expiration_date: Option<String>,
+}
 
-/// Marker trait mirroring `WKWebExtensionWindow`.
-pub trait WebExtensionWindow: Send + Sync {}
+impl<T> Default for WebExtensionGrant<T> {
+    fn default() -> Self {
+        Self {
+            allowed: Vec::new(),
+            expiration_date: None,
+        }
+    }
+}
+
+pub type WebExtensionPermissionGrant = WebExtensionGrant<WebExtensionPermission>;
+pub type WebExtensionUrlGrant = WebExtensionGrant<String>;
+pub type WebExtensionMatchPatternGrant = WebExtensionGrant<WebExtensionMatchPattern>;
+pub type WebExtensionTabHandle = Arc<dyn WebExtensionTab>;
+pub type WebExtensionWindowHandle = Arc<dyn WebExtensionWindow>;
+pub type WebExtensionWebViewHandle = Arc<WebView>;
+
+/// Size reported by `WKWebExtensionTab`.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
+pub struct WebExtensionSize {
+    pub width: f64,
+    pub height: f64,
+}
+
+impl WebExtensionSize {
+    #[must_use]
+    pub const fn new(width: f64, height: f64) -> Self {
+        Self { width, height }
+    }
+}
+
+/// PNG snapshot bytes returned by `WKWebExtensionTab::takeSnapshot`.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WebExtensionTabSnapshot {
+    #[serde(default)]
+    pub png_data: Vec<u8>,
+}
+
+/// Trait mirroring `WKWebExtensionControllerDelegate`.
+pub trait WebExtensionControllerDelegate: Send + Sync {
+    fn open_windows_for_context(
+        &self,
+        _controller: &WebExtensionController,
+        _extension_context: &WebExtensionContext,
+    ) -> Vec<WebExtensionWindowHandle> {
+        Vec::new()
+    }
+
+    fn focused_window_for_context(
+        &self,
+        _controller: &WebExtensionController,
+        _extension_context: &WebExtensionContext,
+    ) -> Option<WebExtensionWindowHandle> {
+        None
+    }
+
+    fn open_new_window(
+        &self,
+        _controller: &WebExtensionController,
+        _configuration: &WebExtensionWindowConfiguration,
+        _extension_context: &WebExtensionContext,
+    ) -> Result<Option<WebExtensionWindowHandle>, WebKitError> {
+        Err(unsupported_web_extension_delegate_method(
+            "WKWebExtensionControllerDelegate.openNewWindowUsingConfiguration",
+        ))
+    }
+
+    fn open_new_tab(
+        &self,
+        _controller: &WebExtensionController,
+        _configuration: &WebExtensionTabConfiguration,
+        _extension_context: &WebExtensionContext,
+    ) -> Result<Option<WebExtensionTabHandle>, WebKitError> {
+        Err(unsupported_web_extension_delegate_method(
+            "WKWebExtensionControllerDelegate.openNewTabUsingConfiguration",
+        ))
+    }
+
+    fn open_options_page(
+        &self,
+        _controller: &WebExtensionController,
+        _extension_context: &WebExtensionContext,
+    ) -> Result<(), WebKitError> {
+        Err(unsupported_web_extension_delegate_method(
+            "WKWebExtensionControllerDelegate.openOptionsPageForExtensionContext",
+        ))
+    }
+
+    fn prompt_for_permissions(
+        &self,
+        _controller: &WebExtensionController,
+        _permissions: &[WebExtensionPermission],
+        _tab: Option<&dyn WebExtensionTab>,
+        _extension_context: &WebExtensionContext,
+    ) -> WebExtensionPermissionGrant {
+        WebExtensionPermissionGrant::default()
+    }
+
+    fn prompt_for_permission_to_access_urls(
+        &self,
+        _controller: &WebExtensionController,
+        _urls: &[String],
+        _tab: Option<&dyn WebExtensionTab>,
+        _extension_context: &WebExtensionContext,
+    ) -> WebExtensionUrlGrant {
+        WebExtensionUrlGrant::default()
+    }
+
+    fn prompt_for_permission_match_patterns(
+        &self,
+        _controller: &WebExtensionController,
+        _match_patterns: &[WebExtensionMatchPattern],
+        _tab: Option<&dyn WebExtensionTab>,
+        _extension_context: &WebExtensionContext,
+    ) -> WebExtensionMatchPatternGrant {
+        WebExtensionMatchPatternGrant::default()
+    }
+
+    fn did_update_action(
+        &self,
+        _controller: &WebExtensionController,
+        _action: &WebExtensionAction,
+        _extension_context: &WebExtensionContext,
+    ) {
+    }
+
+    fn present_popup_for_action(
+        &self,
+        _controller: &WebExtensionController,
+        _action: &WebExtensionAction,
+        _extension_context: &WebExtensionContext,
+    ) -> Result<(), WebKitError> {
+        Err(unsupported_web_extension_delegate_method(
+            "WKWebExtensionControllerDelegate.presentPopupForAction",
+        ))
+    }
+
+    fn send_message(
+        &self,
+        _controller: &WebExtensionController,
+        _message: &Value,
+        _application_identifier: Option<&str>,
+        _extension_context: &WebExtensionContext,
+    ) -> Result<Option<Value>, WebKitError> {
+        Err(unsupported_web_extension_delegate_method(
+            "WKWebExtensionControllerDelegate.sendMessage",
+        ))
+    }
+
+    fn connect_using_message_port(
+        &self,
+        _controller: &WebExtensionController,
+        _port: &WebExtensionMessagePort,
+        _extension_context: &WebExtensionContext,
+    ) -> Result<(), WebKitError> {
+        Err(unsupported_web_extension_delegate_method(
+            "WKWebExtensionControllerDelegate.connectUsingMessagePort",
+        ))
+    }
+}
+
+/// Trait mirroring `WKWebExtensionTab`.
+pub trait WebExtensionTab: Send + Sync {
+    fn window(&self, _context: &WebExtensionContext) -> Option<WebExtensionWindowHandle> {
+        None
+    }
+
+    fn index_in_window(&self, _context: &WebExtensionContext) -> usize {
+        0
+    }
+
+    fn parent_tab(&self, _context: &WebExtensionContext) -> Option<WebExtensionTabHandle> {
+        None
+    }
+
+    fn set_parent_tab(
+        &self,
+        _parent_tab: Option<WebExtensionTabHandle>,
+        _context: &WebExtensionContext,
+    ) -> Result<(), WebKitError> {
+        Err(unsupported_web_extension_delegate_method(
+            "WKWebExtensionTab.setParentTab",
+        ))
+    }
+
+    fn webview(&self, _context: &WebExtensionContext) -> Option<WebExtensionWebViewHandle> {
+        None
+    }
+
+    fn title(&self, _context: &WebExtensionContext) -> Option<String> {
+        None
+    }
+
+    fn is_pinned(&self, _context: &WebExtensionContext) -> bool {
+        false
+    }
+
+    fn set_pinned(&self, _pinned: bool, _context: &WebExtensionContext) -> Result<(), WebKitError> {
+        Err(unsupported_web_extension_delegate_method(
+            "WKWebExtensionTab.setPinned",
+        ))
+    }
+
+    fn is_reader_mode_available(&self, _context: &WebExtensionContext) -> bool {
+        false
+    }
+
+    fn is_reader_mode_active(&self, _context: &WebExtensionContext) -> bool {
+        false
+    }
+
+    fn set_reader_mode_active(
+        &self,
+        _active: bool,
+        _context: &WebExtensionContext,
+    ) -> Result<(), WebKitError> {
+        Err(unsupported_web_extension_delegate_method(
+            "WKWebExtensionTab.setReaderModeActive",
+        ))
+    }
+
+    fn is_playing_audio(&self, _context: &WebExtensionContext) -> bool {
+        false
+    }
+
+    fn is_muted(&self, _context: &WebExtensionContext) -> bool {
+        false
+    }
+
+    fn set_muted(&self, _muted: bool, _context: &WebExtensionContext) -> Result<(), WebKitError> {
+        Err(unsupported_web_extension_delegate_method(
+            "WKWebExtensionTab.setMuted",
+        ))
+    }
+
+    fn size(&self, _context: &WebExtensionContext) -> WebExtensionSize {
+        WebExtensionSize::default()
+    }
+
+    fn zoom_factor(&self, _context: &WebExtensionContext) -> f64 {
+        1.0
+    }
+
+    fn set_zoom_factor(
+        &self,
+        _zoom_factor: f64,
+        _context: &WebExtensionContext,
+    ) -> Result<(), WebKitError> {
+        Err(unsupported_web_extension_delegate_method(
+            "WKWebExtensionTab.setZoomFactor",
+        ))
+    }
+
+    fn url(&self, _context: &WebExtensionContext) -> Option<String> {
+        None
+    }
+
+    fn pending_url(&self, _context: &WebExtensionContext) -> Option<String> {
+        None
+    }
+
+    fn is_loading_complete(&self, _context: &WebExtensionContext) -> bool {
+        true
+    }
+
+    fn detect_webpage_locale(
+        &self,
+        _context: &WebExtensionContext,
+    ) -> Result<Option<String>, WebKitError> {
+        Err(unsupported_web_extension_delegate_method(
+            "WKWebExtensionTab.detectWebpageLocaleForWebExtensionContext",
+        ))
+    }
+
+    fn take_snapshot(
+        &self,
+        _configuration: &SnapshotConfiguration,
+        _context: &WebExtensionContext,
+    ) -> Result<Option<WebExtensionTabSnapshot>, WebKitError> {
+        Err(unsupported_web_extension_delegate_method(
+            "WKWebExtensionTab.takeSnapshotUsingConfiguration",
+        ))
+    }
+
+    fn load_url(&self, _url: &str, _context: &WebExtensionContext) -> Result<(), WebKitError> {
+        Err(unsupported_web_extension_delegate_method(
+            "WKWebExtensionTab.loadURL",
+        ))
+    }
+
+    fn reload(
+        &self,
+        _from_origin: bool,
+        _context: &WebExtensionContext,
+    ) -> Result<(), WebKitError> {
+        Err(unsupported_web_extension_delegate_method(
+            "WKWebExtensionTab.reloadFromOrigin",
+        ))
+    }
+
+    fn go_back(&self, _context: &WebExtensionContext) -> Result<(), WebKitError> {
+        Err(unsupported_web_extension_delegate_method(
+            "WKWebExtensionTab.goBackForWebExtensionContext",
+        ))
+    }
+
+    fn go_forward(&self, _context: &WebExtensionContext) -> Result<(), WebKitError> {
+        Err(unsupported_web_extension_delegate_method(
+            "WKWebExtensionTab.goForwardForWebExtensionContext",
+        ))
+    }
+
+    fn activate(&self, _context: &WebExtensionContext) -> Result<(), WebKitError> {
+        Err(unsupported_web_extension_delegate_method(
+            "WKWebExtensionTab.activateForWebExtensionContext",
+        ))
+    }
+
+    fn is_selected(&self, _context: &WebExtensionContext) -> bool {
+        false
+    }
+
+    fn set_selected(
+        &self,
+        _selected: bool,
+        _context: &WebExtensionContext,
+    ) -> Result<(), WebKitError> {
+        Err(unsupported_web_extension_delegate_method(
+            "WKWebExtensionTab.setSelected",
+        ))
+    }
+
+    fn duplicate(
+        &self,
+        _configuration: &WebExtensionTabConfiguration,
+        _context: &WebExtensionContext,
+    ) -> Result<Option<WebExtensionTabHandle>, WebKitError> {
+        Err(unsupported_web_extension_delegate_method(
+            "WKWebExtensionTab.duplicateUsingConfiguration",
+        ))
+    }
+
+    fn close(&self, _context: &WebExtensionContext) -> Result<(), WebKitError> {
+        Err(unsupported_web_extension_delegate_method(
+            "WKWebExtensionTab.closeForWebExtensionContext",
+        ))
+    }
+
+    fn should_grant_permissions_on_user_gesture(&self, _context: &WebExtensionContext) -> bool {
+        false
+    }
+
+    fn should_bypass_permissions(&self, _context: &WebExtensionContext) -> bool {
+        false
+    }
+}
+
+/// Trait mirroring `WKWebExtensionWindow`.
+pub trait WebExtensionWindow: Send + Sync {
+    fn tabs(&self, _context: &WebExtensionContext) -> Vec<WebExtensionTabHandle> {
+        Vec::new()
+    }
+
+    fn active_tab(&self, _context: &WebExtensionContext) -> Option<WebExtensionTabHandle> {
+        None
+    }
+
+    fn window_type(&self, _context: &WebExtensionContext) -> WebExtensionWindowType {
+        WebExtensionWindowType::Normal
+    }
+
+    fn window_state(&self, _context: &WebExtensionContext) -> WebExtensionWindowState {
+        WebExtensionWindowState::Normal
+    }
+
+    fn set_window_state(
+        &self,
+        _state: WebExtensionWindowState,
+        _context: &WebExtensionContext,
+    ) -> Result<(), WebKitError> {
+        Err(unsupported_web_extension_delegate_method(
+            "WKWebExtensionWindow.setWindowState",
+        ))
+    }
+
+    fn is_private(&self, _context: &WebExtensionContext) -> bool {
+        false
+    }
+
+    fn screen_frame(&self, _context: &WebExtensionContext) -> Rect {
+        Rect::default()
+    }
+
+    fn frame(&self, _context: &WebExtensionContext) -> Rect {
+        Rect::default()
+    }
+
+    fn set_frame(&self, _frame: Rect, _context: &WebExtensionContext) -> Result<(), WebKitError> {
+        Err(unsupported_web_extension_delegate_method(
+            "WKWebExtensionWindow.setFrame",
+        ))
+    }
+
+    fn focus(&self, _context: &WebExtensionContext) -> Result<(), WebKitError> {
+        Err(unsupported_web_extension_delegate_method(
+            "WKWebExtensionWindow.focusForWebExtensionContext",
+        ))
+    }
+
+    fn close(&self, _context: &WebExtensionContext) -> Result<(), WebKitError> {
+        Err(unsupported_web_extension_delegate_method(
+            "WKWebExtensionWindow.closeForWebExtensionContext",
+        ))
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -713,7 +1169,11 @@ impl WebExtensionMatchPattern {
 
     #[must_use]
     pub fn summary(&self) -> WebExtensionMatchPatternSummary {
-        unsafe { take_json_or_default(ffi::wk_web_extension_match_pattern_copy_summary_json(self.ptr)) }
+        unsafe {
+            take_json_or_default(ffi::wk_web_extension_match_pattern_copy_summary_json(
+                self.ptr,
+            ))
+        }
     }
 
     #[must_use]
@@ -728,7 +1188,9 @@ impl WebExtensionMatchPattern {
         options: WebExtensionMatchPatternOptions,
     ) -> bool {
         let url = to_cstring(url);
-        unsafe { ffi::wk_web_extension_match_pattern_matches_url(self.ptr, url.as_ptr(), options.bits()) }
+        unsafe {
+            ffi::wk_web_extension_match_pattern_matches_url(self.ptr, url.as_ptr(), options.bits())
+        }
     }
 
     #[must_use]
@@ -820,9 +1282,9 @@ impl WebExtensionControllerConfiguration {
     #[must_use]
     pub fn summary(&self) -> WebExtensionControllerConfigurationSummary {
         unsafe {
-            take_json_or_default(ffi::wk_web_extension_controller_configuration_copy_summary_json(
-                self.ptr,
-            ))
+            take_json_or_default(
+                ffi::wk_web_extension_controller_configuration_copy_summary_json(self.ptr),
+            )
         }
     }
 
@@ -854,9 +1316,7 @@ impl WebExtensionControllerConfiguration {
     #[must_use]
     pub fn default_website_data_store(&self) -> Option<WebsiteDataStore> {
         WebsiteDataStore::from_ptr(unsafe {
-            ffi::wk_web_extension_controller_configuration_copy_default_website_data_store(
-                self.ptr,
-            )
+            ffi::wk_web_extension_controller_configuration_copy_default_website_data_store(self.ptr)
         })
     }
 }
@@ -1079,7 +1539,9 @@ impl WebExtensionContext {
     pub fn set_base_url(&self, url: &str) -> Result<(), WebKitError> {
         let url = to_cstring(url);
         let mut out_err = ptr::null_mut();
-        let status = unsafe { ffi::wk_web_extension_context_set_base_url(self.ptr, url.as_ptr(), &mut out_err) };
+        let status = unsafe {
+            ffi::wk_web_extension_context_set_base_url(self.ptr, url.as_ptr(), &mut out_err)
+        };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);
         }
@@ -1114,12 +1576,16 @@ impl WebExtensionContext {
 
     pub fn set_unsupported_apis(&self, apis: &[String]) {
         let apis_json = to_json_cstring(apis);
-        unsafe { ffi::wk_web_extension_context_set_unsupported_apis_json(self.ptr, apis_json.as_ptr()) }
+        unsafe {
+            ffi::wk_web_extension_context_set_unsupported_apis_json(self.ptr, apis_json.as_ptr())
+        }
     }
 
     pub fn set_requested_optional_access_to_all_hosts(&self, value: bool) {
         unsafe {
-            ffi::wk_web_extension_context_set_requested_optional_access_to_all_hosts(self.ptr, value);
+            ffi::wk_web_extension_context_set_requested_optional_access_to_all_hosts(
+                self.ptr, value,
+            );
         }
     }
 
@@ -1153,7 +1619,10 @@ impl WebExtensionContext {
     ) -> WebExtensionContextPermissionStatus {
         let permission = to_cstring(permission.as_str());
         match unsafe {
-            ffi::wk_web_extension_context_permission_status_for_permission(self.ptr, permission.as_ptr())
+            ffi::wk_web_extension_context_permission_status_for_permission(
+                self.ptr,
+                permission.as_ptr(),
+            )
         } {
             -3 => WebExtensionContextPermissionStatus::DeniedExplicitly,
             -2 => WebExtensionContextPermissionStatus::DeniedImplicitly,
@@ -1189,7 +1658,9 @@ impl WebExtensionContext {
     #[must_use]
     pub fn permission_status_for_url(&self, url: &str) -> WebExtensionContextPermissionStatus {
         let url = to_cstring(url);
-        match unsafe { ffi::wk_web_extension_context_permission_status_for_url(self.ptr, url.as_ptr()) } {
+        match unsafe {
+            ffi::wk_web_extension_context_permission_status_for_url(self.ptr, url.as_ptr())
+        } {
             -3 => WebExtensionContextPermissionStatus::DeniedExplicitly,
             -2 => WebExtensionContextPermissionStatus::DeniedImplicitly,
             -1 => WebExtensionContextPermissionStatus::RequestedImplicitly,
@@ -1272,7 +1743,11 @@ impl WebExtensionContext {
 
     #[must_use]
     pub fn action(&self) -> Option<WebExtensionAction> {
-        unsafe { take_json_or_default(ffi::wk_web_extension_context_copy_default_action_json(self.ptr)) }
+        unsafe {
+            take_json_or_default(ffi::wk_web_extension_context_copy_default_action_json(
+                self.ptr,
+            ))
+        }
     }
 
     pub fn perform_action(&self) {
@@ -1327,7 +1802,11 @@ unsafe impl Sync for WebExtensionMessagePort {}
 impl WebExtensionMessagePort {
     #[must_use]
     pub fn application_identifier(&self) -> Option<String> {
-        unsafe { take_optional_string(ffi::wk_web_extension_message_port_copy_application_identifier(self.ptr)) }
+        unsafe {
+            take_optional_string(
+                ffi::wk_web_extension_message_port_copy_application_identifier(self.ptr),
+            )
+        }
     }
 
     #[must_use]
@@ -1357,7 +1836,9 @@ impl WebExtensionMessagePort {
 
     pub fn disconnect_with_error(&self, message: &str) {
         let message = to_cstring(message);
-        unsafe { ffi::wk_web_extension_message_port_disconnect_with_error(self.ptr, message.as_ptr()) }
+        unsafe {
+            ffi::wk_web_extension_message_port_disconnect_with_error(self.ptr, message.as_ptr())
+        }
     }
 }
 
@@ -1376,7 +1857,9 @@ pub struct WebExtensionContextNotifications;
 impl WebExtensionContextNotifications {
     #[must_use]
     pub fn errors_did_update() -> &'static str {
-        web_extension_constants().errors_did_update_notification.as_str()
+        web_extension_constants()
+            .errors_did_update_notification
+            .as_str()
     }
 
     #[must_use]
