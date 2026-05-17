@@ -59,6 +59,11 @@ impl Download {
     }
 
     #[must_use]
+    pub(crate) const fn as_ptr(&self) -> *mut c_void {
+        self.ptr
+    }
+
+    #[must_use]
     pub fn original_request_url(&self) -> String {
         unsafe { take_string(ffi::wk_download_copy_original_request_url(self.ptr)) }
     }

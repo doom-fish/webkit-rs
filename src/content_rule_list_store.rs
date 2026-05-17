@@ -60,6 +60,11 @@ impl Default for ContentRuleListStore {
 }
 
 impl ContentRuleListStore {
+    #[must_use]
+    pub(crate) const fn as_ptr(&self) -> *mut c_void {
+        self.ptr
+    }
+
     /// Create the default `WKContentRuleListStore`.
     ///
     /// # Panics
@@ -67,7 +72,10 @@ impl ContentRuleListStore {
     #[must_use]
     pub fn default_store() -> Self {
         let ptr = unsafe { ffi::wk_content_rule_list_store_default() };
-        assert!(!ptr.is_null(), "wk_content_rule_list_store_default returned null");
+        assert!(
+            !ptr.is_null(),
+            "wk_content_rule_list_store_default returned null"
+        );
         Self { ptr }
     }
 

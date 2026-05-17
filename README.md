@@ -2,7 +2,7 @@
 
 Safe Rust bindings for Apple's `WKWebView` APIs on macOS.
 
-> **Status:** v0.2.3 — the audited macOS WebKit surface now closes every remaining public-symbol gap, including attributed-string HTML loading, reply-capable script message handlers, typed UI delegate details, media/fullscreen state, and web-view data import/export. See [`COVERAGE.md`](COVERAGE.md) for the audited SDK matrix.
+> **Status:** v0.3.0 — the audited macOS WebKit surface now includes Tier-1 async wrappers for WebKit completion-handler APIs alongside the existing synchronous coverage. See [`COVERAGE.md`](COVERAGE.md) for the audited SDK matrix.
 
 ## Quick start
 
@@ -78,10 +78,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   - `WKSnapshotConfiguration`
   - `WKPDFConfiguration`
 
+## Async API
+
+Enable the `async` feature for `Future`-based wrappers over WebKit's completion-handler APIs:
+
+```toml
+[dependencies]
+webkit = { version = "0.3", features = ["async"] }
+```
+
+| Type | Description |
+|------|-------------|
+| `AsyncWebView` | `evaluateJavaScript`, `callAsyncJavaScript`, `takeSnapshot`, `createPDF`, `createWebArchiveData`, `find` |
+| `AsyncWebsiteDataStore` | `fetchDataRecords`, `removeData` |
+| `AsyncHttpCookieStore` | `getAllCookies` |
+| `AsyncContentRuleListStore` | `compileContentRuleList` |
+| `AsyncDownload` | `cancel` |
+
+The async API is executor-agnostic and pumps the main run loop while awaiting WebKit completions, so it works in headless CLI examples with `pollster::block_on` as well as other runtimes.
+
 ## Examples and tests
 
-- `examples/` contains 18 numbered, headless-safe examples covering every requested logical area.
-- `tests/` contains 18 area-specific test files.
+- `examples/` contains 21 numbered, headless-safe examples covering every requested logical area.
+- `tests/` contains 21 area-specific test files.
 - Live `WKWebView` smoke tests that require the process main thread are represented as runnable examples and as `#[ignore]` integration tests with notes.
 
 ## Requirements

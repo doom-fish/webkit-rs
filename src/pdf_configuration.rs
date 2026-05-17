@@ -16,6 +16,16 @@ impl PDFConfiguration {
     }
 
     #[must_use]
+    pub const fn rect(&self) -> Option<Rect> {
+        self.rect
+    }
+
+    #[must_use]
+    pub const fn allows_transparent_background(&self) -> bool {
+        self.allow_transparent_background
+    }
+
+    #[must_use]
     pub fn with_rect(mut self, rect: Rect) -> Self {
         self.rect = Some(rect);
         self

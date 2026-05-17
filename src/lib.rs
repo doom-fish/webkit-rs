@@ -7,6 +7,9 @@
     clippy::module_name_repetitions
 )]
 
+#[cfg(feature = "async")]
+#[cfg_attr(docsrs, doc(cfg(feature = "async")))]
+pub mod async_api;
 pub mod attributed_string;
 pub mod back_forward_list;
 pub mod config;
@@ -31,6 +34,15 @@ pub mod web_extension;
 pub mod website_data_store;
 pub mod webview;
 
+#[cfg(feature = "async")]
+#[cfg_attr(docsrs, doc(cfg(feature = "async")))]
+pub use async_api::{
+    AsyncContentRuleListStore, AsyncDownload, AsyncHttpCookieStore, AsyncWebView,
+    AsyncWebsiteDataStore, CallAsyncJavaScriptFuture, CancelWithResumeDataFuture,
+    CompileRuleListFuture, CreatePdfFuture, CreateWebArchiveFuture, DownloadCancelFuture,
+    EvaluateJavaScriptFuture, FetchDataRecordsFuture, FindStringFuture, GetAllCookiesFuture,
+    RemoveDataFuture, TakeSnapshotFuture,
+};
 pub use attributed_string::{
     AttributedString, AttributedStringCompletionHandler, AttributedStringLoadOptions,
     HtmlLoadRequest, READ_ACCESS_URL_DOCUMENT_OPTION,
@@ -79,6 +91,14 @@ pub use webview::{
 };
 
 pub mod prelude {
+    #[cfg(feature = "async")]
+    pub use crate::async_api::{
+        AsyncContentRuleListStore, AsyncDownload, AsyncHttpCookieStore, AsyncWebView,
+        AsyncWebsiteDataStore, CallAsyncJavaScriptFuture, CancelWithResumeDataFuture,
+        CompileRuleListFuture, CreatePdfFuture, CreateWebArchiveFuture, DownloadCancelFuture,
+        EvaluateJavaScriptFuture, FetchDataRecordsFuture, FindStringFuture, GetAllCookiesFuture,
+        RemoveDataFuture, TakeSnapshotFuture,
+    };
     pub use crate::attributed_string::{
         AttributedString, AttributedStringCompletionHandler, AttributedStringLoadOptions,
         HtmlLoadRequest, READ_ACCESS_URL_DOCUMENT_OPTION,

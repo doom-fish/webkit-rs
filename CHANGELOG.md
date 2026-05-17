@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.3.0] - 2026-05-18
+
+### Added
+
+- Added `async_api` module (Tier 1) gated behind the `async` feature flag.
+- `AsyncWebView`: async wrappers for `evaluateJavaScript`, `callAsyncJavaScript`, `takeSnapshot`, `createPDF`, `createWebArchiveData`, and `find`.
+- `AsyncWebsiteDataStore`: async wrappers for `fetchDataRecords` and `removeData`.
+- `AsyncHttpCookieStore`: async wrapper for `getAllCookies`.
+- `AsyncContentRuleListStore`: async wrapper for `compileContentRuleList`.
+- `AsyncDownload`: async wrapper for `cancel` (with and without resume data).
+- Added `doom-fish-utils` as an optional dependency (activated by `async` feature).
+- Added `pollster = "0.3"` as a dev-dependency for running async examples/tests synchronously.
+- Added examples `20_async_webview`, `21_async_cookie_store`, `22_async_data_store`.
+- Added `tests/async_api_tests.rs` with happy-path and error-path coverage for the new async wrappers.
+- `WKWebExtensionContext` async methods deferred to Tier 2 (Stream pattern).
+
+### Changed
+
+- Bumped version from `0.2.3` to `0.3.0`.
+
 ## [0.2.3] - 2026-05-17
 
 ### Added

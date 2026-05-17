@@ -2,6 +2,8 @@
 
 use core::ffi::{c_char, c_void};
 
+#[cfg(feature = "async")]
+pub mod async_api;
 pub mod attributed_string;
 pub mod content_rule_list_store;
 pub mod http_cookie_store;
@@ -9,6 +11,8 @@ pub mod url_scheme;
 pub mod web_extension;
 pub mod website_data_store;
 
+#[cfg(feature = "async")]
+pub use async_api::*;
 pub use attributed_string::*;
 pub use content_rule_list_store::*;
 pub use http_cookie_store::*;

@@ -311,6 +311,11 @@ impl WebView {
         })
     }
 
+    #[must_use]
+    pub(crate) const fn as_ptr(&self) -> *mut c_void {
+        self.ptr
+    }
+
     /// Register a navigation-event callback.
     pub fn set_navigation_handler<F>(&mut self, f: F)
     where

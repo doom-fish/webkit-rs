@@ -1,7 +1,7 @@
 import Foundation
 import WebKit
 
-private func wkFindConfiguration(from jsonCString: UnsafePointer<CChar>?) -> WKFindConfiguration {
+func wkMakeFindConfiguration(from jsonCString: UnsafePointer<CChar>?) -> WKFindConfiguration {
     let configuration = WKFindConfiguration()
     guard let dictionary = wkJSONObject(from: jsonCString) as? [String: Any] else {
         return configuration
@@ -32,7 +32,7 @@ public func wk_webview_find_string(
     }
     let box: WKWebViewBox = wkBorrow(ptr)
     let searchString = String(cString: query)
-    let configuration = wkFindConfiguration(from: configurationJson)
+    let configuration = wkMakeFindConfiguration(from: configurationJson)
 
     let (status, result, error): (Int32, WKFindResult?, String?) = wkWaitForAsync { completion in
         DispatchQueue.main.async {

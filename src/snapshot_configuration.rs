@@ -18,6 +18,21 @@ impl SnapshotConfiguration {
     }
 
     #[must_use]
+    pub const fn rect(&self) -> Option<Rect> {
+        self.rect
+    }
+
+    #[must_use]
+    pub const fn snapshot_width(&self) -> Option<f64> {
+        self.snapshot_width
+    }
+
+    #[must_use]
+    pub const fn after_screen_updates(&self) -> bool {
+        self.after_screen_updates
+    }
+
+    #[must_use]
     pub fn with_rect(mut self, rect: Rect) -> Self {
         self.rect = Some(rect);
         self

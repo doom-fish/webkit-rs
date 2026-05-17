@@ -45,7 +45,11 @@ pub struct Cookie {
 
 impl Cookie {
     #[must_use]
-    pub fn new(name: impl Into<String>, value: impl Into<String>, domain: impl Into<String>) -> Self {
+    pub fn new(
+        name: impl Into<String>,
+        value: impl Into<String>,
+        domain: impl Into<String>,
+    ) -> Self {
         Self {
             name: name.into(),
             value: value.into(),
@@ -118,6 +122,10 @@ impl HttpCookieStore {
         }
     }
 
+    #[must_use]
+    pub(crate) const fn as_ptr(&self) -> *mut c_void {
+        self.ptr
+    }
 
     pub fn all_cookies(&self) -> Result<Vec<Cookie>, WebKitError> {
         let mut out_json = ptr::null_mut();
@@ -134,8 +142,9 @@ impl HttpCookieStore {
     pub fn set_cookie(&self, cookie: &Cookie) -> Result<(), WebKitError> {
         let cookie_json = to_json_cstring(cookie);
         let mut out_err = ptr::null_mut();
-        let status =
-            unsafe { ffi::wk_http_cookie_store_set_cookie(self.ptr, cookie_json.as_ptr(), &mut out_err) };
+        let status = unsafe {
+            ffi::wk_http_cookie_store_set_cookie(self.ptr, cookie_json.as_ptr(), &mut out_err)
+        };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);
         }
