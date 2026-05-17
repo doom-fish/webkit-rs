@@ -254,12 +254,14 @@ final class WKWebExtensionMessagePortBox: NSObject {
     }
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_copy_constants_json")
 public func wk_web_extension_copy_constants_json() -> UnsafeMutablePointer<CChar>? {
     guard #available(macOS 15.4, *) else { return wkCString("{}") }
     return wkCString(wkJSONString(wkWebExtensionConstantsDictionary()))
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_create_with_resource_base_url")
 public func wk_web_extension_create_with_resource_base_url(
     _ path: UnsafePointer<CChar>?,
@@ -293,6 +295,7 @@ public func wk_web_extension_create_with_resource_base_url(
     return status
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_create_with_app_extension_bundle")
 public func wk_web_extension_create_with_app_extension_bundle(
     _ path: UnsafePointer<CChar>?,
@@ -330,12 +333,14 @@ public func wk_web_extension_create_with_app_extension_bundle(
     return status
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_release")
 public func wk_web_extension_release(_ ptr: UnsafeMutableRawPointer?) {
     guard let ptr else { return }
     wkRelease(ptr)
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_copy_summary_json")
 public func wk_web_extension_copy_summary_json(_ ptr: UnsafeMutableRawPointer?) -> UnsafeMutablePointer<CChar>? {
     guard let ptr, #available(macOS 15.4, *) else { return wkCString("{}") }
@@ -343,6 +348,7 @@ public func wk_web_extension_copy_summary_json(_ ptr: UnsafeMutableRawPointer?) 
     return wkCString(wkJSONString(wkWebExtensionSummaryDictionary(box.webExtension)))
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_supports_manifest_version")
 public func wk_web_extension_supports_manifest_version(
     _ ptr: UnsafeMutableRawPointer?,
@@ -353,6 +359,7 @@ public func wk_web_extension_supports_manifest_version(
     return box.webExtension.supportsManifestVersion(manifestVersion)
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_match_pattern_register_custom_url_scheme")
 public func wk_web_extension_match_pattern_register_custom_url_scheme(
     _ scheme: UnsafePointer<CChar>?,
@@ -370,12 +377,14 @@ public func wk_web_extension_match_pattern_register_custom_url_scheme(
     return WK_OK
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_match_pattern_all_urls")
 public func wk_web_extension_match_pattern_all_urls() -> UnsafeMutableRawPointer? {
     guard #available(macOS 15.4, *) else { return nil }
     return wkRetain(WKWebExtensionMatchPatternBox(matchPattern: WKWebExtension.MatchPattern.allURLs()))
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_match_pattern_all_hosts_and_schemes")
 public func wk_web_extension_match_pattern_all_hosts_and_schemes() -> UnsafeMutableRawPointer? {
     guard #available(macOS 15.4, *) else { return nil }
@@ -384,6 +393,7 @@ public func wk_web_extension_match_pattern_all_hosts_and_schemes() -> UnsafeMuta
     )
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_match_pattern_with_string")
 public func wk_web_extension_match_pattern_with_string(
     _ pattern: UnsafePointer<CChar>?,
@@ -408,6 +418,7 @@ public func wk_web_extension_match_pattern_with_string(
     }
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_match_pattern_with_components")
 public func wk_web_extension_match_pattern_with_components(
     _ scheme: UnsafePointer<CChar>?,
@@ -438,12 +449,14 @@ public func wk_web_extension_match_pattern_with_components(
     }
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_match_pattern_release")
 public func wk_web_extension_match_pattern_release(_ ptr: UnsafeMutableRawPointer?) {
     guard let ptr else { return }
     wkRelease(ptr)
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_match_pattern_copy_summary_json")
 public func wk_web_extension_match_pattern_copy_summary_json(
     _ ptr: UnsafeMutableRawPointer?
@@ -453,6 +466,7 @@ public func wk_web_extension_match_pattern_copy_summary_json(
     return wkCString(wkJSONString(wkWebExtensionMatchPatternDictionary(box.matchPattern)))
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_match_pattern_matches_url")
 public func wk_web_extension_match_pattern_matches_url(
     _ ptr: UnsafeMutableRawPointer?,
@@ -470,6 +484,7 @@ public func wk_web_extension_match_pattern_matches_url(
     return box.matchPattern.matches(parsedURL, options: wkWebExtensionMatchPatternOptions(options))
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_match_pattern_matches_pattern")
 public func wk_web_extension_match_pattern_matches_pattern(
     _ ptr: UnsafeMutableRawPointer?,
@@ -482,6 +497,7 @@ public func wk_web_extension_match_pattern_matches_pattern(
     return box.matchPattern.matches(otherBox.matchPattern, options: wkWebExtensionMatchPatternOptions(options))
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_configuration_default")
 public func wk_web_extension_controller_configuration_default() -> UnsafeMutableRawPointer? {
     guard #available(macOS 15.4, *) else { return nil }
@@ -492,6 +508,7 @@ public func wk_web_extension_controller_configuration_default() -> UnsafeMutable
     )
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_configuration_nonpersistent")
 public func wk_web_extension_controller_configuration_nonpersistent() -> UnsafeMutableRawPointer? {
     guard #available(macOS 15.4, *) else { return nil }
@@ -502,6 +519,7 @@ public func wk_web_extension_controller_configuration_nonpersistent() -> UnsafeM
     )
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_configuration_with_identifier")
 public func wk_web_extension_controller_configuration_with_identifier(
     _ identifier: UnsafePointer<CChar>?,
@@ -528,12 +546,14 @@ public func wk_web_extension_controller_configuration_with_identifier(
     return WK_OK
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_configuration_release")
 public func wk_web_extension_controller_configuration_release(_ ptr: UnsafeMutableRawPointer?) {
     guard let ptr else { return }
     wkRelease(ptr)
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_configuration_copy_summary_json")
 public func wk_web_extension_controller_configuration_copy_summary_json(
     _ ptr: UnsafeMutableRawPointer?
@@ -547,6 +567,7 @@ public func wk_web_extension_controller_configuration_copy_summary_json(
     return wkCString(wkJSONString(dictionary))
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_configuration_set_webview_configuration")
 public func wk_web_extension_controller_configuration_set_webview_configuration(
     _ ptr: UnsafeMutableRawPointer?,
@@ -558,6 +579,7 @@ public func wk_web_extension_controller_configuration_set_webview_configuration(
     box.configuration.webViewConfiguration = (configBox.config.copy() as! WKWebViewConfiguration)
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_configuration_copy_webview_configuration")
 public func wk_web_extension_controller_configuration_copy_webview_configuration(
     _ ptr: UnsafeMutableRawPointer?
@@ -567,6 +589,7 @@ public func wk_web_extension_controller_configuration_copy_webview_configuration
     return wkRetain(WKConfigBox(configuration: box.configuration.webViewConfiguration))
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_configuration_set_default_website_data_store")
 public func wk_web_extension_controller_configuration_set_default_website_data_store(
     _ ptr: UnsafeMutableRawPointer?,
@@ -578,6 +601,7 @@ public func wk_web_extension_controller_configuration_set_default_website_data_s
     box.configuration.defaultWebsiteDataStore = storeBox.dataStore
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_configuration_copy_default_website_data_store")
 public func wk_web_extension_controller_configuration_copy_default_website_data_store(
     _ ptr: UnsafeMutableRawPointer?
@@ -587,12 +611,14 @@ public func wk_web_extension_controller_configuration_copy_default_website_data_
     return wkRetain(WKWebsiteDataStoreBox(dataStore: box.configuration.defaultWebsiteDataStore))
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_new")
 public func wk_web_extension_controller_new() -> UnsafeMutableRawPointer? {
     guard #available(macOS 15.4, *) else { return nil }
     return wkRetain(WKWebExtensionControllerBox(controller: WKWebExtensionController()))
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_with_configuration")
 public func wk_web_extension_controller_with_configuration(
     _ configurationPtr: UnsafeMutableRawPointer?
@@ -606,12 +632,14 @@ public func wk_web_extension_controller_with_configuration(
     )
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_release")
 public func wk_web_extension_controller_release(_ ptr: UnsafeMutableRawPointer?) {
     guard let ptr else { return }
     wkRelease(ptr)
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_copy_configuration")
 public func wk_web_extension_controller_copy_configuration(
     _ ptr: UnsafeMutableRawPointer?
@@ -623,6 +651,7 @@ public func wk_web_extension_controller_copy_configuration(
     )
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_load_context")
 public func wk_web_extension_controller_load_context(
     _ ptr: UnsafeMutableRawPointer?,
@@ -644,6 +673,7 @@ public func wk_web_extension_controller_load_context(
     }
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_unload_context")
 public func wk_web_extension_controller_unload_context(
     _ ptr: UnsafeMutableRawPointer?,
@@ -665,6 +695,7 @@ public func wk_web_extension_controller_unload_context(
     }
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_copy_context_for_extension")
 public func wk_web_extension_controller_copy_context_for_extension(
     _ ptr: UnsafeMutableRawPointer?,
@@ -679,6 +710,7 @@ public func wk_web_extension_controller_copy_context_for_extension(
     return wkRetain(WKWebExtensionContextBox(context: context))
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_copy_context_for_url")
 public func wk_web_extension_controller_copy_context_for_url(
     _ ptr: UnsafeMutableRawPointer?,
@@ -698,12 +730,14 @@ public func wk_web_extension_controller_copy_context_for_url(
     return wkRetain(WKWebExtensionContextBox(context: context))
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_copy_all_data_types_json")
 public func wk_web_extension_controller_copy_all_data_types_json() -> UnsafeMutablePointer<CChar>? {
     guard #available(macOS 15.4, *) else { return wkCString("[]") }
     return wkCString(wkJSONString(wkWebExtensionDataTypeArray(WKWebExtensionController.allExtensionDataTypes)))
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_copy_data_records_json")
 public func wk_web_extension_controller_copy_data_records_json(
     _ ptr: UnsafeMutableRawPointer?,
@@ -732,6 +766,7 @@ public func wk_web_extension_controller_copy_data_records_json(
     return status
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_copy_data_record_json_for_context")
 public func wk_web_extension_controller_copy_data_record_json_for_context(
     _ ptr: UnsafeMutableRawPointer?,
@@ -762,6 +797,7 @@ public func wk_web_extension_controller_copy_data_record_json_for_context(
     return status
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_remove_data_for_identifiers")
 public func wk_web_extension_controller_remove_data_for_identifiers(
     _ ptr: UnsafeMutableRawPointer?,
@@ -790,6 +826,7 @@ public func wk_web_extension_controller_remove_data_for_identifiers(
     return status
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_new_for_extension")
 public func wk_web_extension_context_new_for_extension(
     _ extensionPtr: UnsafeMutableRawPointer?
@@ -799,12 +836,14 @@ public func wk_web_extension_context_new_for_extension(
     return wkRetain(WKWebExtensionContextBox(context: WKWebExtensionContext(for: extensionBox.webExtension)))
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_release")
 public func wk_web_extension_context_release(_ ptr: UnsafeMutableRawPointer?) {
     guard let ptr else { return }
     wkRelease(ptr)
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_copy_summary_json")
 public func wk_web_extension_context_copy_summary_json(
     _ ptr: UnsafeMutableRawPointer?
@@ -814,6 +853,7 @@ public func wk_web_extension_context_copy_summary_json(
     return wkCString(wkJSONString(wkWebExtensionContextSummaryDictionary(box.context)))
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_set_base_url")
 public func wk_web_extension_context_set_base_url(
     _ ptr: UnsafeMutableRawPointer?,
@@ -829,6 +869,7 @@ public func wk_web_extension_context_set_base_url(
     return WK_OK
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_set_unique_identifier")
 public func wk_web_extension_context_set_unique_identifier(
     _ ptr: UnsafeMutableRawPointer?,
@@ -844,6 +885,7 @@ public func wk_web_extension_context_set_unique_identifier(
     return WK_OK
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_set_inspectable")
 public func wk_web_extension_context_set_inspectable(
     _ ptr: UnsafeMutableRawPointer?,
@@ -854,6 +896,7 @@ public func wk_web_extension_context_set_inspectable(
     box.context.isInspectable = value
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_set_inspection_name")
 public func wk_web_extension_context_set_inspection_name(
     _ ptr: UnsafeMutableRawPointer?,
@@ -864,6 +907,7 @@ public func wk_web_extension_context_set_inspection_name(
     box.context.inspectionName = name.map(String.init(cString:))
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_set_unsupported_apis_json")
 public func wk_web_extension_context_set_unsupported_apis_json(
     _ ptr: UnsafeMutableRawPointer?,
@@ -874,6 +918,7 @@ public func wk_web_extension_context_set_unsupported_apis_json(
     box.context.unsupportedAPIs = Set(wkStringArray(from: apisJson))
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_set_requested_optional_access_to_all_hosts")
 public func wk_web_extension_context_set_requested_optional_access_to_all_hosts(
     _ ptr: UnsafeMutableRawPointer?,
@@ -884,6 +929,7 @@ public func wk_web_extension_context_set_requested_optional_access_to_all_hosts(
     box.context.hasRequestedOptionalAccessToAllHosts = value
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_set_access_to_private_data")
 public func wk_web_extension_context_set_access_to_private_data(
     _ ptr: UnsafeMutableRawPointer?,
@@ -894,6 +940,7 @@ public func wk_web_extension_context_set_access_to_private_data(
     box.context.hasAccessToPrivateData = value
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_copy_webview_configuration")
 public func wk_web_extension_context_copy_webview_configuration(
     _ ptr: UnsafeMutableRawPointer?
@@ -906,6 +953,7 @@ public func wk_web_extension_context_copy_webview_configuration(
     return wkRetain(WKConfigBox(configuration: configuration))
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_has_permission")
 public func wk_web_extension_context_has_permission(
     _ ptr: UnsafeMutableRawPointer?,
@@ -916,6 +964,7 @@ public func wk_web_extension_context_has_permission(
     return box.context.hasPermission(wkWebExtensionPermission(String(cString: permission)))
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_has_access_to_url")
 public func wk_web_extension_context_has_access_to_url(
     _ ptr: UnsafeMutableRawPointer?,
@@ -932,6 +981,7 @@ public func wk_web_extension_context_has_access_to_url(
     return box.context.hasAccess(to: parsedURL)
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_permission_status_for_permission")
 public func wk_web_extension_context_permission_status_for_permission(
     _ ptr: UnsafeMutableRawPointer?,
@@ -942,6 +992,7 @@ public func wk_web_extension_context_permission_status_for_permission(
     return Int64(box.context.permissionStatus(for: wkWebExtensionPermission(String(cString: permission))).rawValue)
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_set_permission_status_for_permission")
 public func wk_web_extension_context_set_permission_status_for_permission(
     _ ptr: UnsafeMutableRawPointer?,
@@ -961,6 +1012,7 @@ public func wk_web_extension_context_set_permission_status_for_permission(
     return WK_OK
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_permission_status_for_url")
 public func wk_web_extension_context_permission_status_for_url(
     _ ptr: UnsafeMutableRawPointer?,
@@ -977,6 +1029,7 @@ public func wk_web_extension_context_permission_status_for_url(
     return Int64(box.context.permissionStatus(for: parsedURL).rawValue)
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_set_permission_status_for_url")
 public func wk_web_extension_context_set_permission_status_for_url(
     _ ptr: UnsafeMutableRawPointer?,
@@ -997,6 +1050,7 @@ public func wk_web_extension_context_set_permission_status_for_url(
     return WK_OK
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_permission_status_for_match_pattern")
 public func wk_web_extension_context_permission_status_for_match_pattern(
     _ ptr: UnsafeMutableRawPointer?,
@@ -1008,6 +1062,7 @@ public func wk_web_extension_context_permission_status_for_match_pattern(
     return Int64(box.context.permissionStatus(for: patternBox.matchPattern).rawValue)
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_set_permission_status_for_match_pattern")
 public func wk_web_extension_context_set_permission_status_for_match_pattern(
     _ ptr: UnsafeMutableRawPointer?,
@@ -1025,6 +1080,7 @@ public func wk_web_extension_context_set_permission_status_for_match_pattern(
     return WK_OK
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_load_background_content")
 public func wk_web_extension_context_load_background_content(
     _ ptr: UnsafeMutableRawPointer?,
@@ -1051,6 +1107,7 @@ public func wk_web_extension_context_load_background_content(
     return status
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_copy_default_action_json")
 public func wk_web_extension_context_copy_default_action_json(
     _ ptr: UnsafeMutableRawPointer?
@@ -1063,6 +1120,7 @@ public func wk_web_extension_context_copy_default_action_json(
     return wkCString(wkJSONString(wkWebExtensionActionDictionary(action)))
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_perform_default_action")
 public func wk_web_extension_context_perform_default_action(_ ptr: UnsafeMutableRawPointer?) {
     guard let ptr, #available(macOS 15.4, *) else { return }
@@ -1070,6 +1128,7 @@ public func wk_web_extension_context_perform_default_action(_ ptr: UnsafeMutable
     box.context.performAction(for: nil)
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_copy_commands_json")
 public func wk_web_extension_context_copy_commands_json(
     _ ptr: UnsafeMutableRawPointer?
@@ -1079,6 +1138,7 @@ public func wk_web_extension_context_copy_commands_json(
     return wkCString(wkJSONString(box.context.commands.map(wkWebExtensionCommandDictionary)))
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_perform_command_for_identifier")
 public func wk_web_extension_context_perform_command_for_identifier(
     _ ptr: UnsafeMutableRawPointer?,
@@ -1099,12 +1159,14 @@ public func wk_web_extension_context_perform_command_for_identifier(
     return WK_OK
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_message_port_release")
 public func wk_web_extension_message_port_release(_ ptr: UnsafeMutableRawPointer?) {
     guard let ptr else { return }
     wkRelease(ptr)
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_message_port_copy_application_identifier")
 public func wk_web_extension_message_port_copy_application_identifier(
     _ ptr: UnsafeMutableRawPointer?
@@ -1114,6 +1176,7 @@ public func wk_web_extension_message_port_copy_application_identifier(
     return box.port.applicationIdentifier.flatMap(wkCString)
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_message_port_is_disconnected")
 public func wk_web_extension_message_port_is_disconnected(_ ptr: UnsafeMutableRawPointer?) -> Bool {
     guard let ptr, #available(macOS 15.4, *) else { return true }
@@ -1121,6 +1184,7 @@ public func wk_web_extension_message_port_is_disconnected(_ ptr: UnsafeMutableRa
     return box.port.isDisconnected
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_message_port_send_message_json")
 public func wk_web_extension_message_port_send_message_json(
     _ ptr: UnsafeMutableRawPointer?,
@@ -1149,6 +1213,7 @@ public func wk_web_extension_message_port_send_message_json(
     return status
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_message_port_disconnect")
 public func wk_web_extension_message_port_disconnect(_ ptr: UnsafeMutableRawPointer?) {
     guard let ptr, #available(macOS 15.4, *) else { return }
@@ -1156,6 +1221,7 @@ public func wk_web_extension_message_port_disconnect(_ ptr: UnsafeMutableRawPoin
     box.port.disconnect()
 }
 
+@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_message_port_disconnect_with_error")
 public func wk_web_extension_message_port_disconnect_with_error(
     _ ptr: UnsafeMutableRawPointer?,

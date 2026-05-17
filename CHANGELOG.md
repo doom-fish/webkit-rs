@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.3.1] - 2026-06-05
+
+### Changed
+
+- Added `@available(macOS 26.0, *)` attribute to the `wk_webview_fetch_data_of_types`,
+  `wk_webview_restore_data`, `wk_website_data_store_fetch_data`, and
+  `wk_website_data_store_restore_data` Swift bridge thunks, which use
+  `WKWebViewDataType` / `WKWebView.fetchData` / `WKWebView.restoreData` /
+  `WKWebsiteDataStore.fetchData` / `WKWebsiteDataStore.restoreData` — APIs
+  first available in macOS 26.0.
+- Added `@available(macOS 15.4, *)` attribute to all 66 `@_cdecl` thunks in
+  `WKWebExtension.swift`, covering the entire `WKWebExtension` /
+  `WKWebExtensionContext` / `WKWebExtensionController` family (macOS 15.4+).
+  The bridge can now compile against older macOS SDKs (macOS 15 / Xcode 16)
+  without SDK-version pinning.
+
 ## [0.3.0] - 2026-05-18
 
 ### Added

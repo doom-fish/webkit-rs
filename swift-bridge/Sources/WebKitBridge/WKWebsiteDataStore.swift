@@ -231,6 +231,7 @@ public func wk_website_data_store_remove_data_modified_since(
     return status
 }
 
+@available(macOS 26.0, *)
 @_cdecl("wk_website_data_store_fetch_data")
 public func wk_website_data_store_fetch_data(
     _ ptr: UnsafeMutableRawPointer?,
@@ -266,6 +267,7 @@ public func wk_website_data_store_fetch_data(
     return status
 }
 
+@available(macOS 26.0, *)
 @_cdecl("wk_website_data_store_restore_data")
 public func wk_website_data_store_restore_data(
     _ ptr: UnsafeMutableRawPointer?,

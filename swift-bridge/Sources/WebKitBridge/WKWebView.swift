@@ -897,6 +897,7 @@ public func wk_webview_get_fullscreen_state(_ ptr: UnsafeMutableRawPointer?) -> 
     }
 }
 
+@available(macOS 26.0, *)
 @_cdecl("wk_webview_fetch_data_of_types")
 public func wk_webview_fetch_data_of_types(
     _ ptr: UnsafeMutableRawPointer?,
@@ -937,6 +938,7 @@ public func wk_webview_fetch_data_of_types(
     return WK_UNKNOWN
 }
 
+@available(macOS 26.0, *)
 @_cdecl("wk_webview_restore_data")
 public func wk_webview_restore_data(
     _ ptr: UnsafeMutableRawPointer?,
