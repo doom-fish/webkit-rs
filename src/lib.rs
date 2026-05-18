@@ -10,28 +10,49 @@
 #[cfg(feature = "async")]
 #[cfg_attr(docsrs, doc(cfg(feature = "async")))]
 pub mod async_api;
+/// Rust bindings for `NSAttributedString`.
 pub mod attributed_string;
+/// Rust bindings for `WKBackForwardList`.
 pub mod back_forward_list;
+/// Rust bindings for `WKWebViewConfiguration`.
 pub mod config;
+/// Rust bindings for `WKContentRuleListStore`.
 pub mod content_rule_list_store;
+/// Rust bindings for `WKDownload`.
 pub mod download;
+/// Rust bindings for `WKErrorDomain`.
 pub mod error;
 pub mod ffi;
+/// Rust bindings for `WKFindConfiguration`.
 pub mod find;
+/// Rust bindings for `CGRect`.
 pub mod geometry;
+/// Rust bindings for `WKHTTPCookieStore`.
 pub mod http_cookie_store;
+/// Rust bindings for `WKNavigation`.
 pub mod navigation;
+/// Rust bindings for `WKNavigationDelegate`.
 pub mod navigation_delegate;
+/// Rust bindings for `WKPDFConfiguration`.
 pub mod pdf_configuration;
+/// Rust bindings for `WKPreferences`.
 pub mod preferences;
 mod private;
+/// Rust bindings for `WKScriptMessage`.
 pub mod script_message_handler;
+/// Rust bindings for `WKSnapshotConfiguration`.
 pub mod snapshot_configuration;
+/// Rust bindings for `WKUIDelegate`.
 pub mod ui_delegate;
+/// Rust bindings for `WKURLSchemeHandler`.
 pub mod url_scheme;
+/// Rust bindings for `WKUserScript`.
 pub mod user_script;
+/// Rust bindings for `WKWebExtension`.
 pub mod web_extension;
+/// Rust bindings for `WKWebsiteDataStore`.
 pub mod website_data_store;
+/// Rust bindings for `WKWebView`.
 pub mod webview;
 
 #[cfg(feature = "async")]
@@ -90,6 +111,7 @@ pub use webview::{
     FullscreenState, MediaCaptureState, MediaPlaybackState, WebView, WebViewDataType,
 };
 
+/// Convenience re-exports for the WebKit bindings.
 pub mod prelude {
     #[cfg(feature = "async")]
     pub use crate::async_api::{

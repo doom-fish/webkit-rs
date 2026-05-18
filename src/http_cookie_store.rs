@@ -8,19 +8,24 @@ use crate::error::WebKitError;
 use crate::ffi;
 use crate::private::{maybe_take_error, take_json_or_default, to_json_cstring};
 
+/// Wraps `NSHTTPCookie.AcceptPolicy` values.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(i32)]
 pub enum CookiePolicy {
+    /// Mirrors the `Allow` case used by `NSHTTPCookie.AcceptPolicy`.
     Allow = 0,
+    /// Mirrors the `Disallow` case used by `NSHTTPCookie.AcceptPolicy`.
     Disallow = 1,
 }
 
 impl CookiePolicy {
+    /// Returns the corresponding value from `NSHTTPCookie.AcceptPolicy`.
     #[must_use]
     pub const fn as_raw(self) -> i32 {
         self as i32
     }
 
+    /// Creates a value for `NSHTTPCookie.AcceptPolicy`.
     #[must_use]
     pub const fn from_raw(raw: i32) -> Self {
         match raw {
@@ -30,20 +35,30 @@ impl CookiePolicy {
     }
 }
 
+/// Wraps `NSHTTPCookie`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Cookie {
+    /// Mirrors the `name` value exposed by `NSHTTPCookie`.
     pub name: String,
+    /// Mirrors the `value` value exposed by `NSHTTPCookie`.
     pub value: String,
+    /// Mirrors the `domain` value exposed by `NSHTTPCookie`.
     pub domain: String,
+    /// Mirrors the `path` value exposed by `NSHTTPCookie`.
     pub path: String,
+    /// Mirrors the `secure` value exposed by `NSHTTPCookie`.
     pub secure: bool,
+    /// Mirrors the `http_only` value exposed by `NSHTTPCookie`.
     pub http_only: bool,
+    /// Mirrors the `session_only` value exposed by `NSHTTPCookie`.
     pub session_only: bool,
+    /// Mirrors the `expires` value exposed by `NSHTTPCookie`.
     pub expires: Option<i64>,
 }
 
 impl Cookie {
+    /// Creates a value for `NSHTTPCookie`.
     #[must_use]
     pub fn new(
         name: impl Into<String>,
@@ -62,30 +77,35 @@ impl Cookie {
         }
     }
 
+    /// Sets the corresponding option used by `NSHTTPCookie`.
     #[must_use]
     pub fn with_path(mut self, path: impl Into<String>) -> Self {
         self.path = path.into();
         self
     }
 
+    /// Sets the corresponding option used by `NSHTTPCookie`.
     #[must_use]
     pub const fn with_secure(mut self, secure: bool) -> Self {
         self.secure = secure;
         self
     }
 
+    /// Sets the corresponding option used by `NSHTTPCookie`.
     #[must_use]
     pub const fn with_http_only(mut self, http_only: bool) -> Self {
         self.http_only = http_only;
         self
     }
 
+    /// Sets the corresponding option used by `NSHTTPCookie`.
     #[must_use]
     pub const fn with_session_only(mut self, session_only: bool) -> Self {
         self.session_only = session_only;
         self
     }
 
+    /// Sets the corresponding option used by `NSHTTPCookie`.
     #[must_use]
     pub fn with_expires(mut self, expires_at: SystemTime) -> Self {
         let seconds = expires_at
@@ -97,12 +117,15 @@ impl Cookie {
     }
 }
 
+/// Captures data returned by `WKHTTPCookieStore`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CookieStoreEvent {
+    /// Mirrors the `kind` value exposed by `WKHTTPCookieStore`.
     pub kind: String,
 }
 
+/// Wraps `WKHTTPCookieStore`.
 pub struct HttpCookieStore {
     ptr: *mut c_void,
 }
@@ -127,6 +150,7 @@ impl HttpCookieStore {
         self.ptr
     }
 
+    /// Returns the corresponding value from `WKHTTPCookieStore`.
     pub fn all_cookies(&self) -> Result<Vec<Cookie>, WebKitError> {
         let mut out_json = ptr::null_mut();
         let mut out_err = ptr::null_mut();
@@ -139,6 +163,7 @@ impl HttpCookieStore {
         Ok(unsafe { take_json_or_default(out_json) })
     }
 
+    /// Sets the corresponding value on `WKHTTPCookieStore`.
     pub fn set_cookie(&self, cookie: &Cookie) -> Result<(), WebKitError> {
         let cookie_json = to_json_cstring(cookie);
         let mut out_err = ptr::null_mut();
@@ -151,6 +176,7 @@ impl HttpCookieStore {
         Ok(())
     }
 
+    /// Sets the corresponding value on `WKHTTPCookieStore`.
     pub fn set_cookies(&self, cookies: &[Cookie]) -> Result<(), WebKitError> {
         let cookies_json = to_json_cstring(cookies);
         let mut out_err = ptr::null_mut();
@@ -163,6 +189,7 @@ impl HttpCookieStore {
         Ok(())
     }
 
+    /// Calls the corresponding `WKHTTPCookieStore` API.
     pub fn delete_cookie(&self, cookie: &Cookie) -> Result<(), WebKitError> {
         let cookie_json = to_json_cstring(cookie);
         let mut out_err = ptr::null_mut();
@@ -175,19 +202,23 @@ impl HttpCookieStore {
         Ok(())
     }
 
+    /// Calls the corresponding `WKHTTPCookieStore` API.
     pub fn start_observing(&self) {
         unsafe { ffi::wk_http_cookie_store_set_observing(self.ptr, true) }
     }
 
+    /// Calls the corresponding `WKHTTPCookieStore` API.
     pub fn stop_observing(&self) {
         unsafe { ffi::wk_http_cookie_store_set_observing(self.ptr, false) }
     }
 
+    /// Returns the corresponding value from `WKHTTPCookieStore`.
     #[must_use]
     pub fn drain_events(&self) -> Vec<CookieStoreEvent> {
         unsafe { take_json_or_default(ffi::wk_http_cookie_store_drain_events_json(self.ptr)) }
     }
 
+    /// Sets the corresponding value on `WKHTTPCookieStore`.
     pub fn set_cookie_policy(&self, policy: CookiePolicy) -> Result<(), WebKitError> {
         let mut out_err = ptr::null_mut();
         let status = unsafe {
@@ -199,6 +230,7 @@ impl HttpCookieStore {
         Ok(())
     }
 
+    /// Returns the corresponding value from `WKHTTPCookieStore`.
     pub fn cookie_policy(&self) -> Result<CookiePolicy, WebKitError> {
         let mut out_policy = 0;
         let mut out_err = ptr::null_mut();

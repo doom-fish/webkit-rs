@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.5] - 2026-05-18
+
+### Changed
+
+- Added `///` docs across the public `src/` API surface (excluding `src/ffi/` internals), referencing the corresponding WebKit framework counterparts and bringing `cargo rustdoc --lib -- -W missing-docs` to zero warnings.
+- Bumped the crate version from `0.3.4` to `0.3.5`.
+
 ## [0.3.4] - 2026-05-18
 
 - Widen apple-cf version bound to `<0.10` so 0.9.x resolves.

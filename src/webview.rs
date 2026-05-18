@@ -29,16 +29,22 @@ type MessageHandler = dyn Fn(&str, &str) + Send + 'static;
 type ReplyMessageHandler =
     dyn Fn(&str, &str) -> Result<Option<Value>, WebKitError> + Send + 'static;
 
+/// Wraps `WKMediaPlaybackState` values.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(i32)]
 pub enum MediaPlaybackState {
+    /// Mirrors the `None` case used by `WKMediaPlaybackState`.
     None = 0,
+    /// Mirrors the `Playing` case used by `WKMediaPlaybackState`.
     Playing = 1,
+    /// Mirrors the `Paused` case used by `WKMediaPlaybackState`.
     Paused = 2,
+    /// Mirrors the `Suspended` case used by `WKMediaPlaybackState`.
     Suspended = 3,
 }
 
 impl MediaPlaybackState {
+    /// Creates a value for `WKMediaPlaybackState`.
     #[must_use]
     pub const fn from_raw(raw: i32) -> Self {
         match raw {
@@ -50,20 +56,26 @@ impl MediaPlaybackState {
     }
 }
 
+/// Wraps `WKMediaCaptureState` values.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(i32)]
 pub enum MediaCaptureState {
+    /// Mirrors the `None` case used by `WKMediaCaptureState`.
     None = 0,
+    /// Mirrors the `Active` case used by `WKMediaCaptureState`.
     Active = 1,
+    /// Mirrors the `Muted` case used by `WKMediaCaptureState`.
     Muted = 2,
 }
 
 impl MediaCaptureState {
+    /// Returns the corresponding value from `WKMediaCaptureState`.
     #[must_use]
     pub const fn as_raw(self) -> i32 {
         self as i32
     }
 
+    /// Creates a value for `WKMediaCaptureState`.
     #[must_use]
     pub const fn from_raw(raw: i32) -> Self {
         match raw {
@@ -74,16 +86,22 @@ impl MediaCaptureState {
     }
 }
 
+/// Wraps `WKFullscreenState` values.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(i32)]
 pub enum FullscreenState {
+    /// Mirrors the `NotInFullscreen` case used by `WKFullscreenState`.
     NotInFullscreen = 0,
+    /// Mirrors the `EnteringFullscreen` case used by `WKFullscreenState`.
     EnteringFullscreen = 1,
+    /// Mirrors the `InFullscreen` case used by `WKFullscreenState`.
     InFullscreen = 2,
+    /// Mirrors the `ExitingFullscreen` case used by `WKFullscreenState`.
     ExitingFullscreen = 3,
 }
 
 impl FullscreenState {
+    /// Creates a value for `WKFullscreenState`.
     #[must_use]
     pub const fn from_raw(raw: i32) -> Self {
         match raw {
@@ -95,23 +113,29 @@ impl FullscreenState {
     }
 }
 
+/// Wraps `WKWebViewDataType`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct WebViewDataType(u64);
 
 impl WebViewDataType {
+    /// Mirrors the `NONE` constant used by `WKWebViewDataType`.
     pub const NONE: Self = Self(0);
+    /// Mirrors the `SESSION_STORAGE` constant used by `WKWebViewDataType`.
     pub const SESSION_STORAGE: Self = Self(1 << 0);
 
+    /// Creates a value for `WKWebViewDataType`.
     #[must_use]
     pub const fn from_bits(bits: u64) -> Self {
         Self(bits)
     }
 
+    /// Returns the corresponding value from `WKWebViewDataType`.
     #[must_use]
     pub const fn bits(self) -> u64 {
         self.0
     }
 
+    /// Returns whether this `WKWebViewDataType` value contains the provided flags.
     #[must_use]
     pub const fn contains(self, other: Self) -> bool {
         (self.0 & other.0) == other.0
@@ -195,7 +219,9 @@ unsafe extern "C" fn msg_trampoline(
         ""
     } else {
         // SAFETY: `handler_name` is non-null and a valid C string.
-        unsafe { CStr::from_ptr(handler_name) }.to_str().unwrap_or("")
+        unsafe { CStr::from_ptr(handler_name) }
+            .to_str()
+            .unwrap_or("")
     };
     let body_str = if body.is_null() {
         ""
@@ -241,7 +267,9 @@ unsafe extern "C" fn msg_reply_trampoline(
         ""
     } else {
         // SAFETY: `handler_name` is non-null and a valid C string.
-        unsafe { CStr::from_ptr(handler_name) }.to_str().unwrap_or("")
+        unsafe { CStr::from_ptr(handler_name) }
+            .to_str()
+            .unwrap_or("")
     };
     let body_str = if body.is_null() {
         ""
@@ -408,6 +436,7 @@ impl WebView {
         self.reply_msg_holder = Some(holder);
     }
 
+    /// Sets the corresponding value on `WKWebView`.
     pub fn set_navigation_delegate_config(&self, config: &NavigationDelegateConfig) {
         unsafe {
             ffi::wk_webview_set_navigation_delegate_config(
@@ -418,11 +447,13 @@ impl WebView {
         }
     }
 
+    /// Returns the corresponding value from `WKWebView`.
     #[must_use]
     pub fn drain_navigation_events(&self) -> Vec<NavigationEvent> {
         unsafe { take_json_or_default(ffi::wk_webview_drain_navigation_events_json(self.ptr)) }
     }
 
+    /// Sets the corresponding value on `WKWebView`.
     pub fn set_ui_delegate_config(&self, config: &UIDelegateConfig) {
         let prompt_response = config.prompt_response.as_deref().map(to_cstring);
         let prompt_response_ptr = prompt_response
@@ -437,16 +468,19 @@ impl WebView {
         }
     }
 
+    /// Returns the corresponding value from `WKWebView`.
     #[must_use]
     pub fn drain_ui_events(&self) -> Vec<UIDelegateEvent> {
         unsafe { take_json_or_default(ffi::wk_webview_drain_ui_events_json(self.ptr)) }
     }
 
+    /// Returns the corresponding value from `WKWebView`.
     #[must_use]
     pub fn drain_ui_event_details(&self) -> Vec<UIDelegateEventDetail> {
         unsafe { take_json_or_default(ffi::wk_webview_drain_ui_events_json(self.ptr)) }
     }
 
+    /// Returns the corresponding value from `WKWebView`.
     #[must_use]
     pub fn drain_script_messages(&self) -> Vec<ScriptMessage> {
         unsafe { take_json_or_default(ffi::wk_webview_drain_script_messages_json(self.ptr)) }
@@ -584,6 +618,7 @@ impl WebView {
         })
     }
 
+    /// Mirrors the corresponding `WKWebView` API.
     #[must_use]
     pub fn go_back(&self) -> Option<Navigation> {
         let mut out_navigation: *mut c_void = ptr::null_mut();
@@ -595,6 +630,7 @@ impl WebView {
         }
     }
 
+    /// Mirrors the corresponding `WKWebView` API.
     #[must_use]
     pub fn go_forward(&self) -> Option<Navigation> {
         let mut out_navigation: *mut c_void = ptr::null_mut();
@@ -606,6 +642,7 @@ impl WebView {
         }
     }
 
+    /// Mirrors the corresponding `WKWebView` API.
     #[must_use]
     pub fn reload(&self) -> Option<Navigation> {
         let mut out_navigation: *mut c_void = ptr::null_mut();
@@ -617,6 +654,7 @@ impl WebView {
         }
     }
 
+    /// Mirrors the corresponding `WKWebView` API.
     #[must_use]
     pub fn reload_from_origin(&self) -> Option<Navigation> {
         let mut out_navigation: *mut c_void = ptr::null_mut();
@@ -629,30 +667,37 @@ impl WebView {
         }
     }
 
+    /// Calls the corresponding `WKWebView` API.
     pub fn stop_loading(&self) {
         unsafe { ffi::wk_webview_stop_loading(self.ptr) }
     }
 
+    /// Calls the corresponding `WKWebView` API.
     pub fn perform_go_back_action(&self) {
         unsafe { ffi::wk_webview_perform_go_back_action(self.ptr) }
     }
 
+    /// Calls the corresponding `WKWebView` API.
     pub fn perform_go_forward_action(&self) {
         unsafe { ffi::wk_webview_perform_go_forward_action(self.ptr) }
     }
 
+    /// Calls the corresponding `WKWebView` API.
     pub fn perform_reload_action(&self) {
         unsafe { ffi::wk_webview_perform_reload_action(self.ptr) }
     }
 
+    /// Calls the corresponding `WKWebView` API.
     pub fn perform_reload_from_origin_action(&self) {
         unsafe { ffi::wk_webview_perform_reload_from_origin_action(self.ptr) }
     }
 
+    /// Calls the corresponding `WKWebView` API.
     pub fn perform_stop_loading_action(&self) {
         unsafe { ffi::wk_webview_perform_stop_loading_action(self.ptr) }
     }
 
+    /// Mirrors the corresponding `WKWebView` API.
     #[must_use]
     pub fn go_to_back_forward_index(&self, index: isize) -> Option<Navigation> {
         let mut out_navigation: *mut c_void = ptr::null_mut();
@@ -666,41 +711,49 @@ impl WebView {
         }
     }
 
+    /// Returns the corresponding value from `WKWebView`.
     #[must_use]
     pub fn title(&self) -> String {
         unsafe { take_string(ffi::wk_webview_copy_title(self.ptr)) }
     }
 
+    /// Returns the corresponding value from `WKWebView`.
     #[must_use]
     pub fn url(&self) -> String {
         unsafe { take_string(ffi::wk_webview_copy_url(self.ptr)) }
     }
 
+    /// Returns the corresponding value from `WKWebView`.
     #[must_use]
     pub fn is_loading(&self) -> bool {
         unsafe { ffi::wk_webview_is_loading(self.ptr) }
     }
 
+    /// Mirrors the corresponding `WKWebView` API.
     #[must_use]
     pub fn estimated_progress(&self) -> f64 {
         unsafe { ffi::wk_webview_get_estimated_progress(self.ptr) }
     }
 
+    /// Returns the corresponding value from `WKWebView`.
     #[must_use]
     pub fn has_only_secure_content(&self) -> bool {
         unsafe { ffi::wk_webview_get_has_only_secure_content(self.ptr) }
     }
 
+    /// Returns the corresponding value from `WKWebView`.
     #[must_use]
     pub fn can_go_back(&self) -> bool {
         unsafe { ffi::wk_webview_get_can_go_back(self.ptr) }
     }
 
+    /// Returns the corresponding value from `WKWebView`.
     #[must_use]
     pub fn can_go_forward(&self) -> bool {
         unsafe { ffi::wk_webview_get_can_go_forward(self.ptr) }
     }
 
+    /// Mirrors the corresponding `WKWebView` API.
     #[must_use]
     pub fn back_forward_list(&self) -> BackForwardList {
         unsafe {
@@ -708,55 +761,66 @@ impl WebView {
         }
     }
 
+    /// Sets the corresponding value on `WKWebView`.
     pub fn set_custom_user_agent(&self, value: Option<&str>) {
         let value = value.map(to_cstring);
         let value_ptr = value.as_ref().map_or(ptr::null(), |value| value.as_ptr());
         unsafe { ffi::wk_webview_set_custom_user_agent(self.ptr, value_ptr) }
     }
 
+    /// Mirrors the corresponding `WKWebView` API.
     #[must_use]
     pub fn custom_user_agent(&self) -> String {
         unsafe { take_string(ffi::wk_webview_copy_custom_user_agent(self.ptr)) }
     }
 
+    /// Sets the corresponding value on `WKWebView`.
     pub fn set_allows_link_preview(&self, value: bool) {
         unsafe { ffi::wk_webview_set_allows_link_preview(self.ptr, value) }
     }
 
+    /// Returns the corresponding value from `WKWebView`.
     #[must_use]
     pub fn allows_link_preview(&self) -> bool {
         unsafe { ffi::wk_webview_get_allows_link_preview(self.ptr) }
     }
 
+    /// Sets the corresponding value on `WKWebView`.
     pub fn set_page_zoom(&self, value: f64) {
         unsafe { ffi::wk_webview_set_page_zoom(self.ptr, value) }
     }
 
+    /// Mirrors the corresponding `WKWebView` API.
     #[must_use]
     pub fn page_zoom(&self) -> f64 {
         unsafe { ffi::wk_webview_get_page_zoom(self.ptr) }
     }
 
+    /// Sets the corresponding value on `WKWebView`.
     pub fn set_media_type(&self, value: Option<&str>) {
         let value = value.map(to_cstring);
         let value_ptr = value.as_ref().map_or(ptr::null(), |value| value.as_ptr());
         unsafe { ffi::wk_webview_set_media_type(self.ptr, value_ptr) }
     }
 
+    /// Mirrors the corresponding `WKWebView` API.
     #[must_use]
     pub fn media_type(&self) -> String {
         unsafe { take_string(ffi::wk_webview_copy_media_type(self.ptr)) }
     }
 
+    /// Sets the corresponding value on `WKWebView`.
     pub fn set_inspectable(&self, value: bool) {
         unsafe { ffi::wk_webview_set_inspectable(self.ptr, value) }
     }
 
+    /// Returns the corresponding value from `WKWebView`.
     #[must_use]
     pub fn is_inspectable(&self) -> bool {
         unsafe { ffi::wk_webview_get_inspectable(self.ptr) }
     }
 
+    /// Mirrors the corresponding `WKWebView` API.
     pub fn request_media_playback_state(&self) -> Result<MediaPlaybackState, WebKitError> {
         let mut out_state = 0;
         let mut out_err = ptr::null_mut();
@@ -769,11 +833,13 @@ impl WebView {
         Ok(MediaPlaybackState::from_raw(out_state))
     }
 
+    /// Mirrors the corresponding `WKWebView` API.
     #[must_use]
     pub fn camera_capture_state(&self) -> MediaCaptureState {
         MediaCaptureState::from_raw(unsafe { ffi::wk_webview_get_camera_capture_state(self.ptr) })
     }
 
+    /// Mirrors the corresponding `WKWebView` API.
     #[must_use]
     pub fn microphone_capture_state(&self) -> MediaCaptureState {
         MediaCaptureState::from_raw(unsafe {
@@ -781,6 +847,7 @@ impl WebView {
         })
     }
 
+    /// Sets the corresponding value on `WKWebView`.
     pub fn set_camera_capture_state(&self, state: MediaCaptureState) -> Result<(), WebKitError> {
         let mut out_err = ptr::null_mut();
         let status = unsafe {
@@ -792,6 +859,7 @@ impl WebView {
         Ok(())
     }
 
+    /// Sets the corresponding value on `WKWebView`.
     pub fn set_microphone_capture_state(
         &self,
         state: MediaCaptureState,
@@ -806,6 +874,7 @@ impl WebView {
         Ok(())
     }
 
+    /// Mirrors the corresponding `WKWebView` API.
     #[must_use]
     pub fn fullscreen_state(&self) -> FullscreenState {
         FullscreenState::from_raw(unsafe { ffi::wk_webview_get_fullscreen_state(self.ptr) })
@@ -881,11 +950,13 @@ impl WebView {
         Ok(unsafe { take_json_or_default(out_result) })
     }
 
+    /// Returns the corresponding value from `WKWebView`.
     #[must_use]
     pub fn can_perform_text_finder_action(&self, action: TextFinderAction) -> bool {
         unsafe { ffi::wk_webview_validate_text_finder_action(self.ptr, action.as_raw()) }
     }
 
+    /// Calls the corresponding `WKWebView` API.
     pub fn perform_text_finder_action(&self, action: TextFinderAction) {
         unsafe { ffi::wk_webview_perform_text_finder_action(self.ptr, action.as_raw()) }
     }
@@ -961,6 +1032,7 @@ impl WebView {
         Ok(unsafe { take_bytes(out_bytes, out_len) })
     }
 
+    /// Calls the corresponding `WKWebView` API.
     pub fn fetch_data_of_types(&self, data_types: WebViewDataType) -> Result<Vec<u8>, WebKitError> {
         let mut out_bytes: *mut u8 = ptr::null_mut();
         let mut out_len: usize = 0;
@@ -980,6 +1052,7 @@ impl WebView {
         Ok(unsafe { take_bytes(out_bytes, out_len) })
     }
 
+    /// Calls the corresponding `WKWebView` API.
     pub fn restore_data(&self, data: &[u8]) -> Result<(), WebKitError> {
         let mut out_err: *mut c_char = ptr::null_mut();
         let status = unsafe {

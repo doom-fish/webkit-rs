@@ -10,19 +10,24 @@ use crate::private::{take_json_or_default, to_cstring, to_json_cstring};
 use crate::user_script::UserScript;
 use crate::website_data_store::WebsiteDataStore;
 
+/// Wraps `WKUserInterfaceDirectionPolicy` values.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(i32)]
 pub enum UserInterfaceDirectionPolicy {
+    /// Mirrors the `Content` case used by `WKUserInterfaceDirectionPolicy`.
     Content = 0,
+    /// Mirrors the `System` case used by `WKUserInterfaceDirectionPolicy`.
     System = 1,
 }
 
 impl UserInterfaceDirectionPolicy {
+    /// Returns the corresponding value from `WKUserInterfaceDirectionPolicy`.
     #[must_use]
     pub const fn as_raw(self) -> i32 {
         self as i32
     }
 
+    /// Creates a value for `WKUserInterfaceDirectionPolicy`.
     #[must_use]
     pub const fn from_raw(raw: i32) -> Self {
         match raw {
@@ -32,25 +37,33 @@ impl UserInterfaceDirectionPolicy {
     }
 }
 
+/// Wraps `WKAudiovisualMediaTypes`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct AudiovisualMediaTypes(u64);
 
 impl AudiovisualMediaTypes {
+    /// Mirrors the `NONE` constant used by `WKAudiovisualMediaTypes`.
     pub const NONE: Self = Self(0);
+    /// Mirrors the `AUDIO` constant used by `WKAudiovisualMediaTypes`.
     pub const AUDIO: Self = Self(1 << 0);
+    /// Mirrors the `VIDEO` constant used by `WKAudiovisualMediaTypes`.
     pub const VIDEO: Self = Self(1 << 1);
+    /// Mirrors the `ALL` constant used by `WKAudiovisualMediaTypes`.
     pub const ALL: Self = Self(u64::MAX);
 
+    /// Creates a value for `WKAudiovisualMediaTypes`.
     #[must_use]
     pub const fn from_bits(bits: u64) -> Self {
         Self(bits)
     }
 
+    /// Returns the corresponding value from `WKAudiovisualMediaTypes`.
     #[must_use]
     pub const fn bits(self) -> u64 {
         self.0
     }
 
+    /// Returns whether this `WKAudiovisualMediaTypes` value contains the provided flags.
     #[must_use]
     pub const fn contains(self, other: Self) -> bool {
         (self.0 & other.0) == other.0
@@ -86,6 +99,7 @@ impl Default for WebViewConfiguration {
 }
 
 impl WebViewConfiguration {
+    /// Creates a value for `WKWebViewConfiguration`.
     #[must_use]
     pub fn new() -> Self {
         let ptr = unsafe { ffi::wk_config_new() };
@@ -106,25 +120,30 @@ impl WebViewConfiguration {
         self.0
     }
 
+    /// Sets the corresponding value on `WKWebViewConfiguration`.
     pub fn set_application_name_for_user_agent(&self, name: &str) {
         let c_name = to_cstring(name);
         unsafe { ffi::wk_config_set_application_name(self.0, c_name.as_ptr()) }
     }
 
+    /// Returns the corresponding value from `WKWebViewConfiguration`.
     #[must_use]
     pub fn application_name_for_user_agent(&self) -> String {
         unsafe { crate::private::take_string(ffi::wk_config_copy_application_name(self.0)) }
     }
 
+    /// Sets the corresponding value on `WKWebViewConfiguration`.
     pub fn set_allows_airplay_for_media_playback(&self, value: bool) {
         unsafe { ffi::wk_config_set_allows_airplay(self.0, value) }
     }
 
+    /// Returns the corresponding value from `WKWebViewConfiguration`.
     #[must_use]
     pub fn allows_airplay_for_media_playback(&self) -> bool {
         unsafe { ffi::wk_config_get_allows_airplay(self.0) }
     }
 
+    /// Sets the corresponding value on `WKWebViewConfiguration`.
     pub fn set_media_types_requiring_user_action_for_playback(
         &self,
         media_types: AudiovisualMediaTypes,
@@ -137,6 +156,7 @@ impl WebViewConfiguration {
         }
     }
 
+    /// Returns the corresponding value from `WKWebViewConfiguration`.
     #[must_use]
     pub fn media_types_requiring_user_action_for_playback(&self) -> AudiovisualMediaTypes {
         AudiovisualMediaTypes::from_bits(unsafe {
@@ -144,10 +164,12 @@ impl WebViewConfiguration {
         })
     }
 
+    /// Sets the corresponding value on `WKWebViewConfiguration`.
     pub fn set_user_interface_direction_policy(&self, policy: UserInterfaceDirectionPolicy) {
         unsafe { ffi::wk_config_set_user_interface_direction_policy(self.0, policy.as_raw()) }
     }
 
+    /// Returns the corresponding value from `WKWebViewConfiguration`.
     #[must_use]
     pub fn user_interface_direction_policy(&self) -> UserInterfaceDirectionPolicy {
         UserInterfaceDirectionPolicy::from_raw(unsafe {
@@ -155,29 +177,35 @@ impl WebViewConfiguration {
         })
     }
 
+    /// Sets the corresponding value on `WKWebViewConfiguration`.
     pub fn set_allows_content_javascript(&self, value: bool) {
         unsafe { ffi::wk_config_set_allows_content_javascript(self.0, value) }
     }
 
+    /// Returns the corresponding value from `WKWebViewConfiguration`.
     #[must_use]
     pub fn allows_content_javascript(&self) -> bool {
         unsafe { ffi::wk_config_get_allows_content_javascript(self.0) }
     }
 
+    /// Sets the corresponding value on `WKWebViewConfiguration`.
     pub fn set_preferences(&self, preferences: &Preferences) {
         let preferences_json = to_json_cstring(preferences);
         unsafe { ffi::wk_config_set_preferences_json(self.0, preferences_json.as_ptr()) }
     }
 
+    /// Mirrors the corresponding `WKWebViewConfiguration` API.
     #[must_use]
     pub fn preferences(&self) -> Preferences {
         unsafe { take_json_or_default(ffi::wk_config_copy_preferences_json(self.0)) }
     }
 
+    /// Sets the corresponding value on `WKWebViewConfiguration`.
     pub fn set_website_data_store(&self, store: &WebsiteDataStore) {
         unsafe { ffi::wk_config_set_website_data_store(self.0, store.as_ptr()) }
     }
 
+    /// Mirrors the corresponding `WKWebViewConfiguration` API.
     #[must_use]
     pub fn website_data_store(&self) -> Option<WebsiteDataStore> {
         WebsiteDataStore::from_ptr(unsafe { ffi::wk_config_copy_website_data_store(self.0) })
@@ -208,18 +236,22 @@ impl WebViewConfiguration {
         }
     }
 
+    /// Calls the corresponding `WKWebViewConfiguration` API.
     pub fn remove_all_user_scripts(&self) {
         unsafe { ffi::wk_config_remove_all_user_scripts(self.0) }
     }
 
+    /// Calls the corresponding `WKWebViewConfiguration` API.
     pub fn add_content_rule_list(&self, rule_list: &ContentRuleList) {
         unsafe { ffi::wk_config_add_content_rule_list(self.0, rule_list.as_ptr()) }
     }
 
+    /// Calls the corresponding `WKWebViewConfiguration` API.
     pub fn remove_content_rule_list(&self, rule_list: &ContentRuleList) {
         unsafe { ffi::wk_config_remove_content_rule_list(self.0, rule_list.as_ptr()) }
     }
 
+    /// Calls the corresponding `WKWebViewConfiguration` API.
     pub fn remove_all_content_rule_lists(&self) {
         unsafe { ffi::wk_config_remove_all_content_rule_lists(self.0) }
     }

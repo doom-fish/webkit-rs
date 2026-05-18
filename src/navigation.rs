@@ -4,6 +4,7 @@ use core::ptr;
 
 use crate::ffi;
 
+/// Wraps `WKNavigation`.
 pub struct Navigation {
     ptr: *mut c_void,
 }
@@ -20,6 +21,7 @@ impl Navigation {
         }
     }
 
+    /// Returns the corresponding value from `WKNavigation`.
     #[must_use]
     pub fn id(&self) -> usize {
         self.ptr as usize

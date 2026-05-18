@@ -13,96 +13,115 @@ use crate::private::{
     to_json_cstring,
 };
 
+/// Wraps `WKWebsiteDataType`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct WebsiteDataType(Cow<'static, str>);
 
 impl WebsiteDataType {
+    /// Creates a value for `WKWebsiteDataType`.
     #[must_use]
     pub const fn from_static(value: &'static str) -> Self {
         Self(Cow::Borrowed(value))
     }
 
+    /// Creates a value for `WKWebsiteDataType`.
     #[must_use]
     pub fn new(value: impl Into<String>) -> Self {
         Self(Cow::Owned(value.into()))
     }
 
+    /// Returns the corresponding value from `WKWebsiteDataType`.
     #[must_use]
     pub fn as_str(&self) -> &str {
         self.0.as_ref()
     }
 
+    /// Calls the corresponding `WKWebsiteDataType` API.
     #[must_use]
     pub const fn fetch_cache() -> Self {
         Self::from_static("WKWebsiteDataTypeFetchCache")
     }
 
+    /// Mirrors the corresponding `WKWebsiteDataType` API.
     #[must_use]
     pub const fn disk_cache() -> Self {
         Self::from_static("WKWebsiteDataTypeDiskCache")
     }
 
+    /// Mirrors the corresponding `WKWebsiteDataType` API.
     #[must_use]
     pub const fn memory_cache() -> Self {
         Self::from_static("WKWebsiteDataTypeMemoryCache")
     }
 
+    /// Mirrors the corresponding `WKWebsiteDataType` API.
     #[must_use]
     pub const fn offline_web_application_cache() -> Self {
         Self::from_static("WKWebsiteDataTypeOfflineWebApplicationCache")
     }
 
+    /// Mirrors the corresponding `WKWebsiteDataType` API.
     #[must_use]
     pub const fn cookies() -> Self {
         Self::from_static("WKWebsiteDataTypeCookies")
     }
 
+    /// Mirrors the corresponding `WKWebsiteDataType` API.
     #[must_use]
     pub const fn session_storage() -> Self {
         Self::from_static("WKWebsiteDataTypeSessionStorage")
     }
 
+    /// Mirrors the corresponding `WKWebsiteDataType` API.
     #[must_use]
     pub const fn local_storage() -> Self {
         Self::from_static("WKWebsiteDataTypeLocalStorage")
     }
 
+    /// Mirrors the corresponding `WKWebsiteDataType` API.
     #[must_use]
     pub const fn web_sql_databases() -> Self {
         Self::from_static("WKWebsiteDataTypeWebSQLDatabases")
     }
 
+    /// Mirrors the corresponding `WKWebsiteDataType` API.
     #[must_use]
     pub const fn indexed_db_databases() -> Self {
         Self::from_static("WKWebsiteDataTypeIndexedDBDatabases")
     }
 
+    /// Mirrors the corresponding `WKWebsiteDataType` API.
     #[must_use]
     pub const fn service_worker_registrations() -> Self {
         Self::from_static("WKWebsiteDataTypeServiceWorkerRegistrations")
     }
 
+    /// Mirrors the corresponding `WKWebsiteDataType` API.
     #[must_use]
     pub const fn file_system() -> Self {
         Self::from_static("WKWebsiteDataTypeFileSystem")
     }
 
+    /// Mirrors the corresponding `WKWebsiteDataType` API.
     #[must_use]
     pub const fn search_field_recent_searches() -> Self {
         Self::from_static("WKWebsiteDataTypeSearchFieldRecentSearches")
     }
 
+    /// Mirrors the corresponding `WKWebsiteDataType` API.
     #[must_use]
     pub const fn media_keys() -> Self {
         Self::from_static("WKWebsiteDataTypeMediaKeys")
     }
 
+    /// Mirrors the corresponding `WKWebsiteDataType` API.
     #[must_use]
     pub const fn hash_salt() -> Self {
         Self::from_static("WKWebsiteDataTypeHashSalt")
     }
 
+    /// Mirrors the corresponding `WKWebsiteDataType` API.
     #[must_use]
     pub const fn screen_time() -> Self {
         Self::from_static("WKWebsiteDataTypeScreenTime")
@@ -115,13 +134,17 @@ impl AsRef<str> for WebsiteDataType {
     }
 }
 
+/// Wraps `WKWebsiteDataRecord`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WebsiteDataRecord {
+    /// Mirrors the `display_name` value exposed by `WKWebsiteDataRecord`.
     pub display_name: String,
+    /// Mirrors the `data_types` value exposed by `WKWebsiteDataRecord`.
     pub data_types: Vec<WebsiteDataType>,
 }
 
+/// Wraps `WKWebsiteDataStore`.
 pub struct WebsiteDataStore {
     ptr: *mut c_void,
 }
@@ -179,6 +202,7 @@ impl WebsiteDataStore {
         Self { ptr }
     }
 
+    /// Calls the corresponding `WKWebsiteDataStore` API.
     pub fn data_store_for_identifier(identifier: &str) -> Result<Self, WebKitError> {
         let c_identifier = to_cstring(identifier);
         let mut out_store = ptr::null_mut();
@@ -198,6 +222,7 @@ impl WebsiteDataStore {
         })
     }
 
+    /// Returns the corresponding value from `WKWebsiteDataStore`.
     pub fn all_data_store_identifiers() -> Result<Vec<String>, WebKitError> {
         let mut out_json = ptr::null_mut();
         let mut out_err = ptr::null_mut();
@@ -210,6 +235,7 @@ impl WebsiteDataStore {
         Ok(unsafe { take_json_or_default(out_json) })
     }
 
+    /// Calls the corresponding `WKWebsiteDataStore` API.
     pub fn remove_data_store_for_identifier(identifier: &str) -> Result<(), WebKitError> {
         let c_identifier = to_cstring(identifier);
         let mut out_err = ptr::null_mut();
@@ -225,21 +251,25 @@ impl WebsiteDataStore {
         Ok(())
     }
 
+    /// Returns the corresponding value from `WKWebsiteDataStore`.
     #[must_use]
     pub fn all_website_data_types() -> Vec<WebsiteDataType> {
         unsafe { take_json_or_default(ffi::wk_website_data_store_copy_all_data_types_json()) }
     }
 
+    /// Returns the corresponding value from `WKWebsiteDataStore`.
     #[must_use]
     pub fn is_persistent(&self) -> bool {
         unsafe { ffi::wk_website_data_store_is_persistent(self.ptr) }
     }
 
+    /// Returns the corresponding value from `WKWebsiteDataStore`.
     #[must_use]
     pub fn identifier(&self) -> Option<String> {
         unsafe { take_optional_string(ffi::wk_website_data_store_copy_identifier(self.ptr)) }
     }
 
+    /// Calls the corresponding `WKWebsiteDataStore` API.
     pub fn http_cookie_store(&self) -> Result<HttpCookieStore, WebKitError> {
         let ptr = unsafe { ffi::wk_website_data_store_copy_http_cookie_store(self.ptr) };
         HttpCookieStore::from_ptr(ptr).ok_or_else(|| {
@@ -247,6 +277,7 @@ impl WebsiteDataStore {
         })
     }
 
+    /// Calls the corresponding `WKWebsiteDataStore` API.
     pub fn data_records(
         &self,
         data_types: &[WebsiteDataType],
@@ -268,6 +299,7 @@ impl WebsiteDataStore {
         Ok(unsafe { take_json_or_default(out_json) })
     }
 
+    /// Calls the corresponding `WKWebsiteDataStore` API.
     pub fn remove_data_for_records(
         &self,
         data_types: &[WebsiteDataType],
@@ -294,6 +326,7 @@ impl WebsiteDataStore {
         Ok(())
     }
 
+    /// Calls the corresponding `WKWebsiteDataStore` API.
     pub fn remove_data_modified_since(
         &self,
         data_types: &[WebsiteDataType],
@@ -319,6 +352,7 @@ impl WebsiteDataStore {
         Ok(())
     }
 
+    /// Calls the corresponding `WKWebsiteDataStore` API.
     pub fn fetch_data(&self, data_types: &[WebsiteDataType]) -> Result<Vec<u8>, WebKitError> {
         let data_types_json = to_json_cstring(data_types);
         let mut out_bytes = ptr::null_mut();
@@ -339,6 +373,7 @@ impl WebsiteDataStore {
         Ok(unsafe { take_bytes(out_bytes, out_len) })
     }
 
+    /// Calls the corresponding `WKWebsiteDataStore` API.
     pub fn restore_data(&self, data: &[u8]) -> Result<(), WebKitError> {
         let mut out_err = ptr::null_mut();
         let status = unsafe {

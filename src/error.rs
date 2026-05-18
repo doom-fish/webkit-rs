@@ -2,36 +2,57 @@ use std::fmt;
 
 use crate::ffi::status;
 
+/// Mirrors the `WEBKIT_ERROR_DOMAIN` constant used by `WKErrorDomain`.
 pub const WEBKIT_ERROR_DOMAIN: &str = "WKErrorDomain";
 
+/// Wraps `WKErrorCode` values.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(i64)]
 pub enum WebKitErrorCode {
+    /// Mirrors the `Unknown` case used by `WKErrorCode`.
     Unknown = 1,
+    /// Mirrors the `WebContentProcessTerminated` case used by `WKErrorCode`.
     WebContentProcessTerminated = 2,
+    /// Mirrors the `WebViewInvalidated` case used by `WKErrorCode`.
     WebViewInvalidated = 3,
+    /// Mirrors the `JavaScriptExceptionOccurred` case used by `WKErrorCode`.
     JavaScriptExceptionOccurred = 4,
+    /// Mirrors the `JavaScriptResultTypeIsUnsupported` case used by `WKErrorCode`.
     JavaScriptResultTypeIsUnsupported = 5,
+    /// Mirrors the `ContentRuleListStoreCompileFailed` case used by `WKErrorCode`.
     ContentRuleListStoreCompileFailed = 6,
+    /// Mirrors the `ContentRuleListStoreLookUpFailed` case used by `WKErrorCode`.
     ContentRuleListStoreLookUpFailed = 7,
+    /// Mirrors the `ContentRuleListStoreRemoveFailed` case used by `WKErrorCode`.
     ContentRuleListStoreRemoveFailed = 8,
+    /// Mirrors the `ContentRuleListStoreVersionMismatch` case used by `WKErrorCode`.
     ContentRuleListStoreVersionMismatch = 9,
+    /// Mirrors the `AttributedStringContentFailedToLoad` case used by `WKErrorCode`.
     AttributedStringContentFailedToLoad = 10,
+    /// Mirrors the `AttributedStringContentLoadTimedOut` case used by `WKErrorCode`.
     AttributedStringContentLoadTimedOut = 11,
+    /// Mirrors the `JavaScriptInvalidFrameTarget` case used by `WKErrorCode`.
     JavaScriptInvalidFrameTarget = 12,
+    /// Mirrors the `NavigationAppBoundDomain` case used by `WKErrorCode`.
     NavigationAppBoundDomain = 13,
+    /// Mirrors the `JavaScriptAppBoundDomain` case used by `WKErrorCode`.
     JavaScriptAppBoundDomain = 14,
+    /// Mirrors the `DuplicateCredential` case used by `WKErrorCode`.
     DuplicateCredential = 15,
+    /// Mirrors the `MalformedCredential` case used by `WKErrorCode`.
     MalformedCredential = 16,
+    /// Mirrors the `CredentialNotFound` case used by `WKErrorCode`.
     CredentialNotFound = 17,
 }
 
 impl WebKitErrorCode {
+    /// Returns the corresponding value from `WKErrorCode`.
     #[must_use]
     pub const fn as_raw(self) -> i64 {
         self as i64
     }
 
+    /// Creates a value for `WKErrorCode`.
     #[must_use]
     pub const fn from_raw(raw: i64) -> Option<Self> {
         match raw {
@@ -56,22 +77,30 @@ impl WebKitErrorCode {
         }
     }
 
+    /// Returns the corresponding value from `WKErrorCode`.
     #[must_use]
     pub const fn domain() -> &'static str {
         WEBKIT_ERROR_DOMAIN
     }
 }
 
+/// Wraps `WKErrorDomain` values.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WebKitError {
+    /// Mirrors the `InvalidArgument` case used by `WKErrorDomain`.
     InvalidArgument(String),
+    /// Mirrors the `Unsupported` case used by `WKErrorDomain`.
     Unsupported(String),
+    /// Mirrors the `TimedOut` case used by `WKErrorDomain`.
     TimedOut(String),
+    /// Mirrors the `FrameworkError` case used by `WKErrorDomain`.
     FrameworkError(String),
+    /// Mirrors the `Unknown` case used by `WKErrorDomain`.
     Unknown(String),
 }
 
 impl WebKitError {
+    /// Returns the corresponding value from `WKErrorDomain`.
     #[must_use]
     pub fn message(&self) -> &str {
         match self {

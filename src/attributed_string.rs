@@ -12,71 +12,90 @@ use crate::private::{
     maybe_take_error, take_json_or_default, take_string, to_cstring, to_json_cstring,
 };
 
+/// Mirrors the `READ_ACCESS_URL_DOCUMENT_OPTION` constant used by `NSAttributedString`.
 pub const READ_ACCESS_URL_DOCUMENT_OPTION: &str = "NSReadAccessURLDocumentOption";
 
+/// Completion handler used by `NSAttributedString` APIs.
 pub type AttributedStringCompletionHandler =
     Box<dyn FnOnce(Result<AttributedString, WebKitError>) + Send + 'static>;
 
+/// Wraps `NSAttributedString`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HtmlLoadRequest {
+    /// Mirrors the `url` value exposed by `NSAttributedString`.
     pub url: String,
 }
 
 impl HtmlLoadRequest {
+    /// Creates a value for `NSAttributedString`.
     #[must_use]
     pub fn new(url: impl Into<String>) -> Self {
         Self { url: url.into() }
     }
 }
 
+/// Configures `NSAttributedString`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct AttributedStringLoadOptions {
+    /// Mirrors the `read_access_url` value exposed by `NSAttributedString`.
     pub read_access_url: Option<String>,
+    /// Mirrors the `base_url` value exposed by `NSAttributedString`.
     pub base_url: Option<String>,
+    /// Mirrors the `timeout_seconds` value exposed by `NSAttributedString`.
     pub timeout_seconds: Option<f64>,
+    /// Mirrors the `text_size_multiplier` value exposed by `NSAttributedString`.
     pub text_size_multiplier: Option<f64>,
+    /// Mirrors the `text_encoding_name` value exposed by `NSAttributedString`.
     pub text_encoding_name: Option<String>,
+    /// Mirrors the `character_encoding` value exposed by `NSAttributedString`.
     pub character_encoding: Option<u64>,
 }
 
 impl AttributedStringLoadOptions {
+    /// Creates a value for `NSAttributedString`.
     #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Sets the corresponding option used by `NSAttributedString`.
     #[must_use]
     pub fn with_read_access_url(mut self, read_access_url: impl AsRef<Path>) -> Self {
         self.read_access_url = Some(read_access_url.as_ref().to_string_lossy().into_owned());
         self
     }
 
+    /// Sets the corresponding option used by `NSAttributedString`.
     #[must_use]
     pub fn with_base_url(mut self, base_url: impl Into<String>) -> Self {
         self.base_url = Some(base_url.into());
         self
     }
 
+    /// Sets the corresponding option used by `NSAttributedString`.
     #[must_use]
     pub fn with_timeout_seconds(mut self, timeout_seconds: f64) -> Self {
         self.timeout_seconds = Some(timeout_seconds);
         self
     }
 
+    /// Sets the corresponding option used by `NSAttributedString`.
     #[must_use]
     pub fn with_text_size_multiplier(mut self, text_size_multiplier: f64) -> Self {
         self.text_size_multiplier = Some(text_size_multiplier);
         self
     }
 
+    /// Sets the corresponding option used by `NSAttributedString`.
     #[must_use]
     pub fn with_text_encoding_name(mut self, text_encoding_name: impl Into<String>) -> Self {
         self.text_encoding_name = Some(text_encoding_name.into());
         self
     }
 
+    /// Sets the corresponding option used by `NSAttributedString`.
     #[must_use]
     pub const fn with_character_encoding(mut self, character_encoding: u64) -> Self {
         self.character_encoding = Some(character_encoding);
@@ -84,6 +103,7 @@ impl AttributedStringLoadOptions {
     }
 }
 
+/// Wraps `NSAttributedString`.
 pub struct AttributedString {
     ptr: *mut c_void,
 }
@@ -103,6 +123,7 @@ impl AttributedString {
         }
     }
 
+    /// Calls the corresponding `NSAttributedString` API.
     pub fn load_from_html_request(
         request: &HtmlLoadRequest,
         options: &AttributedStringLoadOptions,
@@ -129,6 +150,7 @@ impl AttributedString {
         })
     }
 
+    /// Calls the corresponding `NSAttributedString` API.
     pub fn load_from_html_file(
         file_url: impl AsRef<Path>,
         options: &AttributedStringLoadOptions,
@@ -155,6 +177,7 @@ impl AttributedString {
         })
     }
 
+    /// Calls the corresponding `NSAttributedString` API.
     pub fn load_from_html_string(
         html: &str,
         options: &AttributedStringLoadOptions,
@@ -181,6 +204,7 @@ impl AttributedString {
         })
     }
 
+    /// Calls the corresponding `NSAttributedString` API.
     pub fn load_from_html_data(
         html: &[u8],
         options: &AttributedStringLoadOptions,
@@ -207,11 +231,13 @@ impl AttributedString {
         })
     }
 
+    /// Returns the corresponding value from `NSAttributedString`.
     #[must_use]
     pub fn string(&self) -> String {
         unsafe { take_string(ffi::wk_attributed_string_copy_string(self.ptr)) }
     }
 
+    /// Returns the corresponding value from `NSAttributedString`.
     #[must_use]
     pub fn document_attributes(&self) -> BTreeMap<String, Value> {
         unsafe {

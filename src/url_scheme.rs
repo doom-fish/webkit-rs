@@ -14,8 +14,11 @@ use crate::private::{maybe_take_error, to_cstring, to_json_cstring};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct UrlSchemeRequest {
+    /// Mirrors the `url` value exposed by `WKURLSchemeTask`.
     pub url: String,
+    /// Mirrors the `method` value exposed by `WKURLSchemeTask`.
     pub method: String,
+    /// Mirrors the `headers` value exposed by `WKURLSchemeTask`.
     #[serde(default)]
     pub headers: BTreeMap<String, String>,
 }
@@ -24,15 +27,21 @@ pub struct UrlSchemeRequest {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UrlSchemeResponse {
+    /// Mirrors the `url` value exposed by `URLResponse`.
     pub url: String,
+    /// Mirrors the `mime_type` value exposed by `URLResponse`.
     pub mime_type: String,
+    /// Mirrors the `text_encoding_name` value exposed by `URLResponse`.
     pub text_encoding_name: Option<String>,
+    /// Mirrors the `status_code` value exposed by `URLResponse`.
     pub status_code: i64,
+    /// Mirrors the `headers` value exposed by `URLResponse`.
     #[serde(default)]
     pub headers: BTreeMap<String, String>,
 }
 
 impl UrlSchemeResponse {
+    /// Creates a value for `URLResponse`.
     #[must_use]
     pub fn new(url: impl Into<String>, mime_type: impl Into<String>) -> Self {
         Self {
@@ -44,18 +53,21 @@ impl UrlSchemeResponse {
         }
     }
 
+    /// Sets the corresponding option used by `URLResponse`.
     #[must_use]
     pub fn with_text_encoding_name(mut self, text_encoding_name: impl Into<String>) -> Self {
         self.text_encoding_name = Some(text_encoding_name.into());
         self
     }
 
+    /// Sets the corresponding option used by `URLResponse`.
     #[must_use]
     pub fn with_status_code(mut self, status_code: i64) -> Self {
         self.status_code = status_code;
         self
     }
 
+    /// Sets the corresponding option used by `URLResponse`.
     #[must_use]
     pub fn with_header(mut self, name: impl Into<String>, value: impl Into<String>) -> Self {
         self.headers.insert(name.into(), value.into());
@@ -90,11 +102,13 @@ impl UrlSchemeTask {
         Some(Self { ptr, request })
     }
 
+    /// Returns the corresponding value from `WKURLSchemeTask`.
     #[must_use]
     pub fn request(&self) -> &UrlSchemeRequest {
         &self.request
     }
 
+    /// Calls the corresponding `WKURLSchemeTask` API.
     pub fn did_receive_response(&self, response: &UrlSchemeResponse) -> Result<(), WebKitError> {
         let response_json = to_json_cstring(response);
         let mut out_err = ptr::null_mut();
@@ -111,6 +125,7 @@ impl UrlSchemeTask {
         Ok(())
     }
 
+    /// Calls the corresponding `WKURLSchemeTask` API.
     pub fn did_receive_data(&self, data: &[u8]) -> Result<(), WebKitError> {
         let mut out_err = ptr::null_mut();
         let status = unsafe {
@@ -122,6 +137,7 @@ impl UrlSchemeTask {
         Ok(())
     }
 
+    /// Calls the corresponding `WKURLSchemeTask` API.
     pub fn did_finish(&self) -> Result<(), WebKitError> {
         let mut out_err = ptr::null_mut();
         let status = unsafe { ffi::wk_url_scheme_task_finish(self.ptr, &mut out_err) };
@@ -131,6 +147,7 @@ impl UrlSchemeTask {
         Ok(())
     }
 
+    /// Calls the corresponding `WKURLSchemeTask` API.
     pub fn did_fail(&self, message: &str) -> Result<(), WebKitError> {
         let c_message = to_cstring(message);
         let mut out_err = ptr::null_mut();
@@ -142,6 +159,7 @@ impl UrlSchemeTask {
         Ok(())
     }
 
+    /// Calls the corresponding `WKURLSchemeTask` API.
     pub fn respond(&self, response: &UrlSchemeResponse, body: &[u8]) -> Result<(), WebKitError> {
         self.did_receive_response(response)?;
         if !body.is_empty() {
@@ -162,7 +180,9 @@ impl Drop for UrlSchemeTask {
 
 /// Trait mirroring the `WKURLSchemeHandler` protocol.
 pub trait UrlSchemeHandler: Send + Sync + 'static {
+    /// Mirrors the corresponding `WKURLSchemeHandler` API.
     fn start(&self, task: UrlSchemeTask);
+    /// Mirrors the corresponding `WKURLSchemeHandler` API.
     fn stop(&self, task: UrlSchemeTask);
 }
 

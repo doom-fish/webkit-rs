@@ -6,6 +6,7 @@ use crate::error::WebKitError;
 use crate::ffi;
 use crate::private::{maybe_take_error, take_json_or_default, take_string, to_cstring};
 
+/// Wraps `WKContentRuleList`.
 pub struct ContentRuleList {
     ptr: *mut c_void,
 }
@@ -29,6 +30,7 @@ impl ContentRuleList {
         self.ptr
     }
 
+    /// Returns the corresponding value from `WKContentRuleList`.
     #[must_use]
     pub fn identifier(&self) -> String {
         unsafe { take_string(ffi::wk_content_rule_list_copy_identifier(self.ptr)) }
@@ -44,6 +46,7 @@ impl Drop for ContentRuleList {
     }
 }
 
+/// Wraps `WKContentRuleListStore`.
 pub struct ContentRuleListStore {
     ptr: *mut c_void,
 }
@@ -94,6 +97,7 @@ impl ContentRuleListStore {
         Self { ptr }
     }
 
+    /// Calls the corresponding `WKContentRuleListStore` API.
     pub fn compile(
         &self,
         identifier: &str,
@@ -120,6 +124,7 @@ impl ContentRuleListStore {
         })
     }
 
+    /// Calls the corresponding `WKContentRuleListStore` API.
     pub fn lookup(&self, identifier: &str) -> Result<Option<ContentRuleList>, WebKitError> {
         let c_identifier = to_cstring(identifier);
         let mut out_rule_list = ptr::null_mut();
@@ -138,6 +143,7 @@ impl ContentRuleListStore {
         Ok(ContentRuleList::from_ptr(out_rule_list))
     }
 
+    /// Mirrors the corresponding `WKContentRuleListStore` API.
     pub fn remove(&self, identifier: &str) -> Result<(), WebKitError> {
         let c_identifier = to_cstring(identifier);
         let mut out_err = ptr::null_mut();
@@ -150,6 +156,7 @@ impl ContentRuleListStore {
         Ok(())
     }
 
+    /// Returns the corresponding value from `WKContentRuleListStore`.
     pub fn available_identifiers(&self) -> Result<Vec<String>, WebKitError> {
         let mut out_json = ptr::null_mut();
         let mut out_err = ptr::null_mut();
