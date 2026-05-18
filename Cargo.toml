@@ -1,6 +1,6 @@
 [package]
 name = "webkit"
-version = "0.3.2"
+version = "0.3.3"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/doom-fish/webkit-rs"
@@ -40,7 +40,7 @@ default = []
 async = ["dep:doom-fish-utils"]
 
 [dependencies]
-apple-cf = { version = ">=0.2, <0.8", features = ["cg"] }
+apple-cf = { version = ">=0.2, <0.9", features = ["cg"] }
 doom-fish-utils = { path = "../doom-fish-utils", version = ">=0.1, <0.3", optional = true }
 libc = "0.2"
 serde = { version = "1", features = ["derive"] }
