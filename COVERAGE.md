@@ -97,7 +97,7 @@ Legend:
 | --- | --- | --- |
 | JavaScript alert / confirm / prompt panels | ✅ | Headless-safe responses and event recording. |
 | `createWebViewWithConfiguration`, `runOpenPanel`, media-capture permission request | ✅ | Bridged with deterministic headless behavior and typed `WindowFeatures` / `OpenPanelParameters` / `SecurityOrigin` event details. |
-| Remaining AppKit / iOS delegate hooks (context menus, previews, fullscreen, focus updates, etc.) | 🟡 | Not yet exposed. |
+| Remaining AppKit / iOS delegate hooks (fullscreen, focus updates, etc.) | 🟡 | Standalone `WKContextMenuElementInfo` / `WKPreviewElementInfo` / `WKPreviewActionItem` wrappers are exposed; the remaining delegate hooks are still not bridged. |
 
 ## WKScriptMessageHandler
 

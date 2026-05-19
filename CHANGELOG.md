@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.6] - 2026-05-19
+
+### Added
+
+- Added standalone `ContextMenuElementInfo`, `PreviewElementInfo`, and `PreviewActionItem` wrappers with Swift bridge accessors for `linkURL`, `title`, and `identifier`.
+- Added focused `context_menu_tests` coverage for the new context-menu / preview metadata surface.
+
+### Changed
+
+- Bumped the crate version from `0.3.5` to `0.3.6`.
+
 ## [0.3.5] - 2026-05-18
 
 ### Changed
