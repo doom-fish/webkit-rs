@@ -1,4 +1,4 @@
-use core::ffi::{c_char, CStr};
+use core::ffi::c_char;
 use std::ffi::CString;
 
 use serde::{de::DeserializeOwned, Serialize};
@@ -25,12 +25,8 @@ where
 /// # Safety
 /// `ptr` must have been allocated by `wk_string_free`-compatible bridge code.
 pub unsafe fn take_string(ptr: *mut c_char) -> String {
-    if ptr.is_null() {
-        return String::new();
-    }
-    let string = CStr::from_ptr(ptr).to_string_lossy().into_owned();
-    ffi::wk_string_free(ptr);
-    string
+    doom_fish_utils::ffi_string::take_owned_cstring_c(ptr, |p| ffi::wk_string_free(p))
+        .unwrap_or_default()
 }
 
 /// Take ownership of an optional C string returned by the bridge.
