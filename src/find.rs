@@ -106,3 +106,41 @@ impl FindResult {
         self.match_found
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{FindConfiguration, FindResult, TextFinderAction};
+
+    #[test]
+    fn text_finder_action_raw_values_are_stable() {
+        let cases = [
+            (TextFinderAction::ShowFindInterface, 1),
+            (TextFinderAction::ReplaceAll, 4),
+            (TextFinderAction::ReplaceAndFind, 6),
+            (TextFinderAction::HideReplaceInterface, 13),
+        ];
+
+        for (action, raw) in cases {
+            assert_eq!(action.as_raw(), raw);
+        }
+    }
+
+    #[test]
+    fn find_configuration_default_and_builder_methods_work_together() {
+        let configuration = FindConfiguration::new()
+            .with_backwards(true)
+            .with_case_sensitive(true)
+            .with_wraps(false);
+
+        assert_eq!(FindConfiguration::default(), FindConfiguration { backwards: false, case_sensitive: false, wraps: true });
+        assert!(configuration.backwards);
+        assert!(configuration.case_sensitive);
+        assert!(!configuration.wraps);
+    }
+
+    #[test]
+    fn find_result_found_reflects_match_flag() {
+        assert!(FindResult { match_found: true }.found());
+        assert!(!FindResult { match_found: false }.found());
+    }
+}

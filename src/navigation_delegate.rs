@@ -264,3 +264,63 @@ impl NavigationEvent {
         self.navigation_type.map(NavigationType::from_raw)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        NavigationAction, NavigationActionPolicy, NavigationDelegateConfig, NavigationEvent,
+        NavigationResponsePolicy, NavigationType,
+    };
+
+    #[test]
+    fn navigation_policies_expose_expected_raw_values() {
+        assert_eq!(NavigationActionPolicy::Cancel.as_raw(), 0);
+        assert_eq!(NavigationActionPolicy::Allow.as_raw(), 1);
+        assert_eq!(NavigationActionPolicy::Download.as_raw(), 2);
+        assert_eq!(NavigationResponsePolicy::Cancel.as_raw(), 0);
+        assert_eq!(NavigationResponsePolicy::Allow.as_raw(), 1);
+        assert_eq!(NavigationResponsePolicy::Download.as_raw(), 2);
+    }
+
+    #[test]
+    fn navigation_delegate_config_defaults_to_allow() {
+        let config = NavigationDelegateConfig::default();
+
+        assert_eq!(config.action_policy, NavigationActionPolicy::Allow);
+        assert_eq!(config.response_policy, NavigationResponsePolicy::Allow);
+    }
+
+    #[test]
+    fn navigation_type_round_trips_and_defaults_to_other() {
+        assert_eq!(NavigationType::default(), NavigationType::Other);
+        assert_eq!(NavigationType::LinkActivated.as_raw(), 0);
+        assert_eq!(NavigationType::from_raw(0), NavigationType::LinkActivated);
+        assert_eq!(NavigationType::from_raw(4), NavigationType::FormResubmitted);
+        assert_eq!(NavigationType::from_raw(99), NavigationType::Other);
+    }
+
+    #[test]
+    fn navigation_action_default_is_empty_and_non_downloading() {
+        let action = NavigationAction::default();
+
+        assert_eq!(action.navigation_type, NavigationType::Other);
+        assert!(action.request_url.is_empty());
+        assert!(action.request_method.is_empty());
+        assert!(action.request_headers.is_empty());
+        assert!(action.target_frame.is_none());
+        assert!(!action.should_perform_download);
+        assert_eq!(action.button_number, 0);
+    }
+
+    #[test]
+    fn navigation_event_unknown_is_empty_and_reports_no_type() {
+        let event = NavigationEvent::unknown();
+
+        assert!(event.url.is_empty());
+        assert!(event.error.is_none());
+        assert!(event.navigation_type.is_none());
+        assert_eq!(event.navigation_type_enum(), None);
+        assert!(event.navigation_action.is_none());
+        assert!(event.navigation_response.is_none());
+    }
+}

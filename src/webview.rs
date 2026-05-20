@@ -1114,3 +1114,45 @@ impl Drop for WebView {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{FullscreenState, MediaCaptureState, MediaPlaybackState, WebViewDataType};
+
+    #[test]
+    fn media_playback_state_from_raw_covers_all_variants() {
+        assert_eq!(MediaPlaybackState::from_raw(-1), MediaPlaybackState::None);
+        assert_eq!(MediaPlaybackState::from_raw(1), MediaPlaybackState::Playing);
+        assert_eq!(MediaPlaybackState::from_raw(2), MediaPlaybackState::Paused);
+        assert_eq!(MediaPlaybackState::from_raw(3), MediaPlaybackState::Suspended);
+    }
+
+    #[test]
+    fn media_capture_state_round_trips_raw_values() {
+        assert_eq!(MediaCaptureState::None.as_raw(), 0);
+        assert_eq!(MediaCaptureState::from_raw(0), MediaCaptureState::None);
+        assert_eq!(MediaCaptureState::Active.as_raw(), 1);
+        assert_eq!(MediaCaptureState::from_raw(1), MediaCaptureState::Active);
+        assert_eq!(MediaCaptureState::Muted.as_raw(), 2);
+        assert_eq!(MediaCaptureState::from_raw(2), MediaCaptureState::Muted);
+    }
+
+    #[test]
+    fn fullscreen_state_from_raw_covers_all_variants() {
+        assert_eq!(FullscreenState::from_raw(-1), FullscreenState::NotInFullscreen);
+        assert_eq!(FullscreenState::from_raw(1), FullscreenState::EnteringFullscreen);
+        assert_eq!(FullscreenState::from_raw(2), FullscreenState::InFullscreen);
+        assert_eq!(FullscreenState::from_raw(3), FullscreenState::ExitingFullscreen);
+    }
+
+    #[test]
+    fn webview_data_type_bitflags_combine_and_contain() {
+        let mut types = WebViewDataType::default();
+        types |= WebViewDataType::SESSION_STORAGE;
+
+        assert_eq!(WebViewDataType::NONE.bits(), 0);
+        assert_eq!(types.bits(), WebViewDataType::SESSION_STORAGE.bits());
+        assert!(types.contains(WebViewDataType::SESSION_STORAGE));
+        assert_eq!(WebViewDataType::from_bits(types.bits()), types);
+    }
+}

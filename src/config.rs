@@ -280,3 +280,34 @@ impl Drop for WebViewConfiguration {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{AudiovisualMediaTypes, UserInterfaceDirectionPolicy};
+
+    #[test]
+    fn user_interface_direction_policy_round_trips_raw_values() {
+        assert_eq!(UserInterfaceDirectionPolicy::Content.as_raw(), 0);
+        assert_eq!(UserInterfaceDirectionPolicy::from_raw(0), UserInterfaceDirectionPolicy::Content);
+        assert_eq!(UserInterfaceDirectionPolicy::System.as_raw(), 1);
+        assert_eq!(UserInterfaceDirectionPolicy::from_raw(1), UserInterfaceDirectionPolicy::System);
+        assert_eq!(UserInterfaceDirectionPolicy::from_raw(99), UserInterfaceDirectionPolicy::Content);
+    }
+
+    #[test]
+    fn audiovisual_media_types_bitflags_combine_and_contain() {
+        let mut media_types = AudiovisualMediaTypes::AUDIO;
+        media_types |= AudiovisualMediaTypes::VIDEO;
+
+        assert!(media_types.contains(AudiovisualMediaTypes::AUDIO));
+        assert!(media_types.contains(AudiovisualMediaTypes::VIDEO));
+        assert_eq!(media_types.bits(), AudiovisualMediaTypes::AUDIO.bits() | AudiovisualMediaTypes::VIDEO.bits());
+        assert!(AudiovisualMediaTypes::ALL.contains(media_types));
+    }
+
+    #[test]
+    fn audiovisual_media_types_default_is_empty() {
+        assert_eq!(AudiovisualMediaTypes::default(), AudiovisualMediaTypes::NONE);
+        assert_eq!(AudiovisualMediaTypes::from_bits(0), AudiovisualMediaTypes::NONE);
+    }
+}

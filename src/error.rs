@@ -146,3 +146,49 @@ pub(crate) const fn status_from_error(error: &WebKitError) -> i32 {
         WebKitError::Unknown(_) => status::UNKNOWN,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        error_from_status, status_from_error, WebKitError, WebKitErrorCode, WEBKIT_ERROR_DOMAIN,
+    };
+    use crate::ffi::status;
+
+    #[test]
+    fn error_codes_round_trip_and_share_the_webkit_domain() {
+        assert_eq!(WebKitErrorCode::Unknown.as_raw(), 1);
+        assert_eq!(WebKitErrorCode::from_raw(1), Some(WebKitErrorCode::Unknown));
+        assert_eq!(WebKitErrorCode::from_raw(17), Some(WebKitErrorCode::CredentialNotFound));
+        assert_eq!(WebKitErrorCode::from_raw(99), None);
+        assert_eq!(WebKitErrorCode::domain(), WEBKIT_ERROR_DOMAIN);
+    }
+
+    #[test]
+    fn error_status_mapping_and_display_messages_match() {
+        let invalid = error_from_status(status::INVALID_ARGUMENT, "bad url".to_owned());
+        let unsupported = error_from_status(status::UNSUPPORTED, "feature".to_owned());
+        let timed_out = error_from_status(status::TIMED_OUT, "search".to_owned());
+        let framework = error_from_status(status::FRAMEWORK_ERROR, "bridge".to_owned());
+        let unknown = error_from_status(42, "mystery".to_owned());
+
+        assert_eq!(invalid.to_string(), "invalid argument: bad url");
+        assert_eq!(unsupported.to_string(), "unsupported: feature");
+        assert_eq!(timed_out.to_string(), "timed out: search");
+        assert_eq!(framework.to_string(), "framework error: bridge");
+        assert_eq!(unknown.to_string(), "unknown error: mystery");
+        assert_eq!(status_from_error(&invalid), status::INVALID_ARGUMENT);
+        assert_eq!(status_from_error(&unsupported), status::UNSUPPORTED);
+        assert_eq!(status_from_error(&timed_out), status::TIMED_OUT);
+        assert_eq!(status_from_error(&framework), status::FRAMEWORK_ERROR);
+        assert_eq!(status_from_error(&unknown), status::UNKNOWN);
+    }
+
+    #[test]
+    fn message_accessor_returns_payload_and_error_source_is_none() {
+        let error = WebKitError::FrameworkError("bridge failure".to_owned());
+        let as_std_error: &dyn std::error::Error = &error;
+
+        assert_eq!(error.message(), "bridge failure");
+        assert!(as_std_error.source().is_none());
+    }
+}
