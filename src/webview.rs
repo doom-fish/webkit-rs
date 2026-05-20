@@ -374,6 +374,7 @@ impl WebView {
         })
     }
 
+    #[cfg(feature = "async")]
     #[must_use]
     pub(crate) const fn as_ptr(&self) -> *mut c_void {
         self.ptr
