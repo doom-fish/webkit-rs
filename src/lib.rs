@@ -40,6 +40,8 @@ pub mod pdf_configuration;
 /// Rust bindings for `WKPreferences`.
 pub mod preferences;
 mod private;
+/// Rust bindings for Network.framework proxy configuration handles used by `WKWebsiteDataStore`.
+pub mod proxy_configuration;
 /// Rust bindings for `WKScriptMessage`.
 pub mod script_message_handler;
 /// Rust bindings for `WKSnapshotConfiguration`.
@@ -81,11 +83,13 @@ pub use geometry::Rect;
 pub use http_cookie_store::{Cookie, CookiePolicy, CookieStoreEvent, HttpCookieStore};
 pub use navigation::Navigation;
 pub use navigation_delegate::{
-    FrameInfo, NavigationAction, NavigationActionPolicy, NavigationDelegateConfig, NavigationEvent,
-    NavigationEventKind, NavigationResponse, NavigationResponsePolicy, NavigationType,
+    BackForwardListNavigationEvent, BackForwardListNavigationPolicy, FrameInfo, NavigationAction,
+    NavigationActionPolicy, NavigationDelegateConfig, NavigationEvent, NavigationEventKind,
+    NavigationResponse, NavigationResponsePolicy, NavigationType,
 };
 pub use pdf_configuration::PDFConfiguration;
 pub use preferences::{InactiveSchedulingPolicy, Preferences, UpgradeToHTTPSPolicy};
+pub use proxy_configuration::{ProxyConfiguration, ProxyConfigurationSummary};
 pub use script_message_handler::ScriptMessage;
 pub use snapshot_configuration::SnapshotConfiguration;
 pub use ui_delegate::{
@@ -141,12 +145,13 @@ pub mod prelude {
     pub use crate::http_cookie_store::{Cookie, CookiePolicy, CookieStoreEvent, HttpCookieStore};
     pub use crate::navigation::Navigation;
     pub use crate::navigation_delegate::{
-        FrameInfo, NavigationAction, NavigationActionPolicy, NavigationDelegateConfig,
-        NavigationEvent, NavigationEventKind, NavigationResponse, NavigationResponsePolicy,
-        NavigationType,
+        BackForwardListNavigationEvent, BackForwardListNavigationPolicy, FrameInfo,
+        NavigationAction, NavigationActionPolicy, NavigationDelegateConfig, NavigationEvent,
+        NavigationEventKind, NavigationResponse, NavigationResponsePolicy, NavigationType,
     };
     pub use crate::pdf_configuration::PDFConfiguration;
     pub use crate::preferences::{InactiveSchedulingPolicy, Preferences, UpgradeToHTTPSPolicy};
+    pub use crate::proxy_configuration::{ProxyConfiguration, ProxyConfigurationSummary};
     pub use crate::script_message_handler::ScriptMessage;
     pub use crate::snapshot_configuration::SnapshotConfiguration;
     pub use crate::ui_delegate::{

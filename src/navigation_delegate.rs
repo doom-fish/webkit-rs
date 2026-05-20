@@ -2,6 +2,8 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
+use crate::back_forward_list::BackForwardListItem;
+
 /// Wraps `WKNavigationActionPolicy` values.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(i32)]
@@ -39,6 +41,33 @@ impl NavigationResponsePolicy {
     #[must_use]
     pub const fn as_raw(self) -> i32 {
         self as i32
+    }
+}
+
+/// Wraps the allow/deny decision for `shouldGoToBackForwardListItem`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[repr(i32)]
+pub enum BackForwardListNavigationPolicy {
+    /// Disallow the back/forward navigation.
+    Cancel = 0,
+    /// Allow the back/forward navigation.
+    Allow = 1,
+}
+
+impl BackForwardListNavigationPolicy {
+    /// Returns the corresponding value from `WKNavigationDelegate`.
+    #[must_use]
+    pub const fn as_raw(self) -> i32 {
+        self as i32
+    }
+
+    /// Creates a value for `WKNavigationDelegate`.
+    #[must_use]
+    pub const fn from_raw(raw: i32) -> Self {
+        match raw {
+            0 => Self::Cancel,
+            _ => Self::Allow,
+        }
     }
 }
 
@@ -192,6 +221,16 @@ pub struct NavigationResponse {
     pub can_show_mime_type: bool,
 }
 
+/// Captures data returned by `webView:shouldGoToBackForwardListItem:willUseInstantBack:completionHandler:`.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BackForwardListNavigationEvent {
+    /// Mirrors the target `WKBackForwardListItem`.
+    pub item: BackForwardListItem,
+    /// Mirrors the `willUseInstantBack` flag.
+    pub will_use_instant_back: bool,
+}
+
 /// Wraps `WKNavigationDelegate` values.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -268,8 +307,8 @@ impl NavigationEvent {
 #[cfg(test)]
 mod tests {
     use super::{
-        NavigationAction, NavigationActionPolicy, NavigationDelegateConfig, NavigationEvent,
-        NavigationResponsePolicy, NavigationType,
+        BackForwardListNavigationPolicy, NavigationAction, NavigationActionPolicy,
+        NavigationDelegateConfig, NavigationEvent, NavigationResponsePolicy, NavigationType,
     };
 
     #[test]
@@ -288,6 +327,24 @@ mod tests {
 
         assert_eq!(config.action_policy, NavigationActionPolicy::Allow);
         assert_eq!(config.response_policy, NavigationResponsePolicy::Allow);
+    }
+
+    #[test]
+    fn back_forward_list_navigation_policy_round_trips_raw_values() {
+        assert_eq!(BackForwardListNavigationPolicy::Cancel.as_raw(), 0);
+        assert_eq!(
+            BackForwardListNavigationPolicy::from_raw(0),
+            BackForwardListNavigationPolicy::Cancel
+        );
+        assert_eq!(BackForwardListNavigationPolicy::Allow.as_raw(), 1);
+        assert_eq!(
+            BackForwardListNavigationPolicy::from_raw(1),
+            BackForwardListNavigationPolicy::Allow
+        );
+        assert_eq!(
+            BackForwardListNavigationPolicy::from_raw(99),
+            BackForwardListNavigationPolicy::Allow
+        );
     }
 
     #[test]

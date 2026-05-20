@@ -170,6 +170,12 @@ public func wk_bytes_free(_ ptr: UnsafeMutablePointer<UInt8>?, _ len: Int) {
     ptr.deallocate()
 }
 
+@_cdecl("wk_pointer_array_free")
+public func wk_pointer_array_free(_ ptr: UnsafeMutablePointer<UnsafeMutableRawPointer?>?) {
+    guard let ptr else { return }
+    ptr.deallocate()
+}
+
 @_cdecl("wk_run_loop_pump")
 public func wk_run_loop_pump(_ seconds: Double) {
     let interval = max(0.001, seconds)

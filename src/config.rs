@@ -4,9 +4,10 @@ use core::ptr;
 use std::ops::{BitOr, BitOrAssign};
 
 use crate::content_rule_list_store::ContentRuleList;
+use crate::error::WebKitError;
 use crate::ffi;
 use crate::preferences::Preferences;
-use crate::private::{take_json_or_default, to_cstring, to_json_cstring};
+use crate::private::{maybe_take_error, take_json_or_default, to_cstring, to_json_cstring};
 use crate::user_script::UserScript;
 use crate::website_data_store::WebsiteDataStore;
 
@@ -141,6 +142,38 @@ impl WebViewConfiguration {
     #[must_use]
     pub fn allows_airplay_for_media_playback(&self) -> bool {
         unsafe { ffi::wk_config_get_allows_airplay(self.0) }
+    }
+
+    /// Sets whether the System Screen Time blocking view should be shown.
+    pub fn set_shows_system_screen_time_blocking_view(
+        &self,
+        value: bool,
+    ) -> Result<(), WebKitError> {
+        let mut out_err = ptr::null_mut();
+        let status = unsafe {
+            ffi::wk_config_set_shows_system_screen_time_blocking_view(self.0, value, &mut out_err)
+        };
+        if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
+            return Err(error);
+        }
+        Ok(())
+    }
+
+    /// Returns whether the System Screen Time blocking view should be shown.
+    pub fn shows_system_screen_time_blocking_view(&self) -> Result<bool, WebKitError> {
+        let mut out_value = false;
+        let mut out_err = ptr::null_mut();
+        let status = unsafe {
+            ffi::wk_config_get_shows_system_screen_time_blocking_view(
+                self.0,
+                &mut out_value,
+                &mut out_err,
+            )
+        };
+        if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
+            return Err(error);
+        }
+        Ok(out_value)
     }
 
     /// Sets the corresponding value on `WKWebViewConfiguration`.
@@ -288,10 +321,19 @@ mod tests {
     #[test]
     fn user_interface_direction_policy_round_trips_raw_values() {
         assert_eq!(UserInterfaceDirectionPolicy::Content.as_raw(), 0);
-        assert_eq!(UserInterfaceDirectionPolicy::from_raw(0), UserInterfaceDirectionPolicy::Content);
+        assert_eq!(
+            UserInterfaceDirectionPolicy::from_raw(0),
+            UserInterfaceDirectionPolicy::Content
+        );
         assert_eq!(UserInterfaceDirectionPolicy::System.as_raw(), 1);
-        assert_eq!(UserInterfaceDirectionPolicy::from_raw(1), UserInterfaceDirectionPolicy::System);
-        assert_eq!(UserInterfaceDirectionPolicy::from_raw(99), UserInterfaceDirectionPolicy::Content);
+        assert_eq!(
+            UserInterfaceDirectionPolicy::from_raw(1),
+            UserInterfaceDirectionPolicy::System
+        );
+        assert_eq!(
+            UserInterfaceDirectionPolicy::from_raw(99),
+            UserInterfaceDirectionPolicy::Content
+        );
     }
 
     #[test]
@@ -301,13 +343,22 @@ mod tests {
 
         assert!(media_types.contains(AudiovisualMediaTypes::AUDIO));
         assert!(media_types.contains(AudiovisualMediaTypes::VIDEO));
-        assert_eq!(media_types.bits(), AudiovisualMediaTypes::AUDIO.bits() | AudiovisualMediaTypes::VIDEO.bits());
+        assert_eq!(
+            media_types.bits(),
+            AudiovisualMediaTypes::AUDIO.bits() | AudiovisualMediaTypes::VIDEO.bits()
+        );
         assert!(AudiovisualMediaTypes::ALL.contains(media_types));
     }
 
     #[test]
     fn audiovisual_media_types_default_is_empty() {
-        assert_eq!(AudiovisualMediaTypes::default(), AudiovisualMediaTypes::NONE);
-        assert_eq!(AudiovisualMediaTypes::from_bits(0), AudiovisualMediaTypes::NONE);
+        assert_eq!(
+            AudiovisualMediaTypes::default(),
+            AudiovisualMediaTypes::NONE
+        );
+        assert_eq!(
+            AudiovisualMediaTypes::from_bits(0),
+            AudiovisualMediaTypes::NONE
+        );
     }
 }

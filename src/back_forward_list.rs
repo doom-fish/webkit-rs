@@ -15,6 +15,7 @@ pub struct BackForwardListItem {
     /// Mirrors the `title` value exposed by `WKBackForwardListItem`.
     pub title: Option<String>,
     /// Mirrors the `initial_url` value exposed by `WKBackForwardListItem`.
+    #[serde(alias = "initialURL")]
     pub initial_url: String,
 }
 

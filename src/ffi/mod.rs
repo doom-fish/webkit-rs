@@ -8,6 +8,7 @@ pub mod attributed_string;
 pub mod content_rule_list_store;
 pub mod context_menu;
 pub mod http_cookie_store;
+pub mod proxy_configuration;
 pub mod url_scheme;
 pub mod web_extension;
 pub mod website_data_store;
@@ -18,6 +19,7 @@ pub use attributed_string::*;
 pub use content_rule_list_store::*;
 pub use context_menu::*;
 pub use http_cookie_store::*;
+pub use proxy_configuration::*;
 pub use url_scheme::*;
 pub use web_extension::*;
 pub use website_data_store::*;
@@ -64,6 +66,16 @@ unsafe extern "C" {
     pub fn wk_config_copy_application_name(ptr: *mut c_void) -> *mut c_char;
     pub fn wk_config_set_allows_airplay(ptr: *mut c_void, v: bool);
     pub fn wk_config_get_allows_airplay(ptr: *mut c_void) -> bool;
+    pub fn wk_config_set_shows_system_screen_time_blocking_view(
+        ptr: *mut c_void,
+        value: bool,
+        out_err: *mut *mut c_char,
+    ) -> i32;
+    pub fn wk_config_get_shows_system_screen_time_blocking_view(
+        ptr: *mut c_void,
+        out_value: *mut bool,
+        out_err: *mut *mut c_char,
+    ) -> i32;
     pub fn wk_config_set_media_types_requiring_user_action_for_playback(
         ptr: *mut c_void,
         raw_value: u64,
@@ -100,6 +112,11 @@ unsafe extern "C" {
         callback: Option<WKNavCallback>,
         user_info: *mut c_void,
     );
+    pub fn wk_webview_set_back_forward_list_nav_callback(
+        ptr: *mut c_void,
+        callback: Option<WKNavCallback>,
+        user_info: *mut c_void,
+    );
     pub fn wk_webview_set_msg_callback(
         ptr: *mut c_void,
         callback: Option<WKMsgCallback>,
@@ -115,7 +132,11 @@ unsafe extern "C" {
         action_policy: i32,
         response_policy: i32,
     );
+    pub fn wk_webview_set_back_forward_list_navigation_policy(ptr: *mut c_void, policy: i32);
     pub fn wk_webview_drain_navigation_events_json(ptr: *mut c_void) -> *mut c_char;
+    pub fn wk_webview_drain_back_forward_list_navigation_events_json(
+        ptr: *mut c_void,
+    ) -> *mut c_char;
     pub fn wk_webview_set_ui_delegate_config(
         ptr: *mut c_void,
         confirm_response: bool,

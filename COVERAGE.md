@@ -1,6 +1,6 @@
 # WebKit coverage audit
 
-Audited against the macOS 26.2 SDK headers for:
+Audited against the macOS 26.5 SDK headers for:
 
 - `WKWebView.h`
 - `WKWebViewConfiguration.h`
@@ -46,7 +46,7 @@ Legend:
 | --- | --- | --- |
 | `preferences` | ✅ | `Preferences` round-trips through JSON bridge helpers. |
 | `websiteDataStore` | ✅ | `set_website_data_store` and `website_data_store`. |
-| `applicationNameForUserAgent`, `allowsAirPlayForMediaPlayback` | ✅ | Direct getters / setters exposed. |
+| `applicationNameForUserAgent`, `allowsAirPlayForMediaPlayback`, `showsSystemScreenTimeBlockingView` | ✅ | Direct getters / setters exposed, with runtime availability handling for `showsSystemScreenTimeBlockingView` on macOS 26+. |
 | `defaultWebpagePreferences.allowsContentJavaScript` | ✅ | Exposed through `set_allows_content_javascript` / `allows_content_javascript` and `Preferences::java_script_enabled`. |
 | `userContentController` user scripts / message handlers / content rule lists | ✅ | User scripts, one-way and reply-capable handler-name registration, and content rule list install / removal are bridged. |
 | `processPool` | ⏭️ | Deprecated on macOS 12+. |
@@ -64,7 +64,7 @@ Legend:
 | `httpCookieStore` | ✅ | `http_cookie_store()`. |
 | `identifier`, `init(forIdentifier:)`, `remove(forIdentifier:)`, `fetchAllDataStoreIdentifiers` | ✅ | Availability-gated and return `Unsupported` on older macOS versions. |
 | `fetchData(of:)`, `restoreData(_:)` | ✅ | Availability-gated import / export helpers for macOS 26+. |
-| `proxyConfigurations` | 🟡 | Not yet wrapped; requires bridging `nw_proxy_config_t` values from Network.framework. |
+| `proxyConfigurations` | ✅ | `ProxyConfiguration` / `ProxyConfigurationSummary` plus `proxy_configurations`, `set_proxy_configurations`, and `clear_proxy_configurations` expose the Network.framework-backed override surface. |
 | `WKWebsiteDataRecord.displayName`, `WKWebsiteDataRecord.dataTypes` | ✅ | Exposed as `WebsiteDataRecord`. |
 | `WKWebsiteDataType*` constants in `WKWebsiteDataRecord.h` | ✅ | Wrapped as `WebsiteDataType` constructors. |
 
@@ -89,6 +89,7 @@ Legend:
 | `didStartProvisionalNavigation`, `didReceiveServerRedirectForProvisionalNavigation`, `didCommit`, `didFinish`, `didFail`, `didFailProvisionalNavigation`, `webViewWebContentProcessDidTerminate` | ✅ | Recorded as `NavigationEvent`s and available through callback + event drain. |
 | `decidePolicyForNavigationAction`, `decidePolicyForNavigationResponse` | ✅ | Configurable action / response policies. |
 | `navigationActionDidBecomeDownload`, `navigationResponseDidBecomeDownload` | ✅ | Captured as navigation events. |
+| `webView:shouldGoToBackForwardListItem:willUseInstantBack:completionHandler:` | ✅ | Exposed through `BackForwardListNavigationPolicy`, `set_back_forward_list_navigation_policy`, `set_back_forward_list_navigation_handler`, and `drain_back_forward_list_navigation_events`. |
 | Remaining delegate hooks (authentication challenges, HTTPS upgrades, rendering process details, etc.) | 🟡 | Not yet exposed. |
 
 ## WKUIDelegate

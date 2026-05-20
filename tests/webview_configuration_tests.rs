@@ -21,6 +21,10 @@ fn webview_configuration_enum_helpers_are_typed() {
         WebViewConfiguration::set_user_interface_direction_policy;
     let _: fn(&WebViewConfiguration) -> UserInterfaceDirectionPolicy =
         WebViewConfiguration::user_interface_direction_policy;
+    let _: fn(&WebViewConfiguration, bool) -> Result<(), WebKitError> =
+        WebViewConfiguration::set_shows_system_screen_time_blocking_view;
+    let _: fn(&WebViewConfiguration) -> Result<bool, WebKitError> =
+        WebViewConfiguration::shows_system_screen_time_blocking_view;
 }
 
 #[test]
@@ -47,4 +51,20 @@ fn webview_configuration_roundtrips_basic_settings() {
         roundtrip.upgrade_to_https_policy,
         UpgradeToHTTPSPolicy::AutomaticFallbackToHttp
     );
+}
+
+#[test]
+#[ignore = "WKWebViewConfiguration bridge tests must run on the process main thread; examples cover live validation"]
+fn webview_configuration_roundtrips_screen_time_blocking_view_when_supported(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let config = WebViewConfiguration::new();
+    match config.shows_system_screen_time_blocking_view() {
+        Ok(initial) => {
+            config.set_shows_system_screen_time_blocking_view(!initial)?;
+            assert_eq!(config.shows_system_screen_time_blocking_view()?, !initial);
+        }
+        Err(WebKitError::Unsupported(_)) => {}
+        Err(error) => return Err(Box::new(error)),
+    }
+    Ok(())
 }

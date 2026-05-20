@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.10] - 2026-05-20
+
+### Added
+
+- Added `WebViewConfiguration::{set_shows_system_screen_time_blocking_view, shows_system_screen_time_blocking_view}` for the macOS 26.0+ `showsSystemScreenTimeBlockingView` property.
+- Added self-contained `ProxyConfiguration` / `ProxyConfigurationSummary` support plus `WebsiteDataStore::{proxy_configurations, set_proxy_configurations, clear_proxy_configurations}` for the macOS 14.0+ `proxyConfigurations` surface.
+- Added `BackForwardListNavigationPolicy`, `BackForwardListNavigationEvent`, and corresponding `WebView` bridge methods for `webView:shouldGoToBackForwardListItem:willUseInstantBack:completionHandler:`.
+- Added compile/serde coverage and ignored smoke tests for the MacOSX26.5 completeness sweep.
+
+### Notes
+
+- Phase 32 completeness + async sweep.
+- Bumped the crate version from `0.3.9` to `0.3.10` and refreshed the coverage docs for the MacOSX26.5 SDK.
+
 ## [0.3.9] - 2026-05-20
 
 - Added in-`src/` unit tests across config, error, find, navigation_delegate, and webview (Tier 2 quality polish), providing fast `cargo test --lib` fail-fast signal alongside the existing integration tests under `tests/`.

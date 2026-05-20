@@ -193,6 +193,46 @@ public func wk_config_get_allows_airplay(_ ptr: UnsafeMutableRawPointer?) -> Boo
     return box.config.allowsAirPlayForMediaPlayback
 }
 
+@available(macOS 26.0, *)
+@_cdecl("wk_config_set_shows_system_screen_time_blocking_view")
+public func wk_config_set_shows_system_screen_time_blocking_view(
+    _ ptr: UnsafeMutableRawPointer?,
+    _ value: Bool,
+    _ outErr: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> Int32 {
+    guard let ptr else {
+        outErr?.pointee = wkCString("missing configuration")
+        return WK_INVALID_ARGUMENT
+    }
+    guard #available(macOS 26.0, *) else {
+        outErr?.pointee = wkCString("showsSystemScreenTimeBlockingView requires macOS 26.0+")
+        return WK_UNSUPPORTED
+    }
+    let box: WKConfigBox = wkBorrow(ptr)
+    box.config.showsSystemScreenTimeBlockingView = value
+    return WK_OK
+}
+
+@available(macOS 26.0, *)
+@_cdecl("wk_config_get_shows_system_screen_time_blocking_view")
+public func wk_config_get_shows_system_screen_time_blocking_view(
+    _ ptr: UnsafeMutableRawPointer?,
+    _ outValue: UnsafeMutablePointer<Bool>?,
+    _ outErr: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> Int32 {
+    guard let ptr else {
+        outErr?.pointee = wkCString("missing configuration")
+        return WK_INVALID_ARGUMENT
+    }
+    guard #available(macOS 26.0, *) else {
+        outErr?.pointee = wkCString("showsSystemScreenTimeBlockingView requires macOS 26.0+")
+        return WK_UNSUPPORTED
+    }
+    let box: WKConfigBox = wkBorrow(ptr)
+    outValue?.pointee = box.config.showsSystemScreenTimeBlockingView
+    return WK_OK
+}
+
 @_cdecl("wk_config_set_media_types_requiring_user_action_for_playback")
 public func wk_config_set_media_types_requiring_user_action_for_playback(
     _ ptr: UnsafeMutableRawPointer?,

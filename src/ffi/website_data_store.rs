@@ -41,6 +41,22 @@ unsafe extern "C" {
         modified_since_unix_seconds: f64,
         out_err: *mut *mut c_char,
     ) -> i32;
+    pub fn wk_website_data_store_copy_proxy_configurations(
+        ptr: *mut c_void,
+        out_proxy_configurations: *mut *mut *mut c_void,
+        out_len: *mut usize,
+        out_err: *mut *mut c_char,
+    ) -> i32;
+    pub fn wk_website_data_store_set_proxy_configurations(
+        ptr: *mut c_void,
+        proxy_configurations: *const *mut c_void,
+        len: usize,
+        out_err: *mut *mut c_char,
+    ) -> i32;
+    pub fn wk_website_data_store_clear_proxy_configurations(
+        ptr: *mut c_void,
+        out_err: *mut *mut c_char,
+    ) -> i32;
     pub fn wk_website_data_store_fetch_data(
         ptr: *mut c_void,
         data_types_json: *const c_char,

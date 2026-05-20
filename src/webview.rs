@@ -13,7 +13,10 @@ use crate::error::{status_from_error, WebKitError};
 use crate::ffi::{self, WKMsgCallback, WKMsgReplyCallback, WKNavCallback};
 use crate::find::{FindConfiguration, FindResult, TextFinderAction};
 use crate::navigation::Navigation;
-use crate::navigation_delegate::{NavigationDelegateConfig, NavigationEvent};
+use crate::navigation_delegate::{
+    BackForwardListNavigationEvent, BackForwardListNavigationPolicy, NavigationDelegateConfig,
+    NavigationEvent,
+};
 use crate::pdf_configuration::PDFConfiguration;
 use crate::private::{
     maybe_take_error, take_bytes, take_json_or_default, take_string, to_cstring, to_json_cstring,
@@ -25,6 +28,7 @@ use crate::ui_delegate::{UIDelegateConfig, UIDelegateEvent, UIDelegateEventDetai
 pub use crate::navigation_delegate::NavigationEventKind;
 
 type NavigationHandler = dyn Fn(NavigationEvent) + Send + 'static;
+type BackForwardListNavigationHandler = dyn Fn(BackForwardListNavigationEvent) + Send + 'static;
 type MessageHandler = dyn Fn(&str, &str) + Send + 'static;
 type ReplyMessageHandler =
     dyn Fn(&str, &str) -> Result<Option<Value>, WebKitError> + Send + 'static;
@@ -160,6 +164,10 @@ struct NavCallbackHolder {
     f: Box<NavigationHandler>,
 }
 
+struct BackForwardListNavCallbackHolder {
+    f: Box<BackForwardListNavigationHandler>,
+}
+
 struct MsgCallbackHolder {
     f: Box<MessageHandler>,
 }
@@ -198,6 +206,28 @@ unsafe extern "C" fn nav_trampoline(user_info: *mut c_void, event_json: *const c
     let event = serde_json::from_str::<NavigationEvent>(&json)
         .unwrap_or_else(|_| NavigationEvent::unknown());
     // Catch panics from user-supplied closure to prevent UB across the C ABI.
+    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (holder.f)(event)));
+}
+
+// SAFETY: Called by the Swift bridge on the main thread. `user_info` is either
+// null or a shared reference to `BackForwardListNavCallbackHolder` whose
+// lifetime is managed by the enclosing `WebView`. `event_json` is a bridge-
+// owned null-terminated C string valid for the duration of this call.
+unsafe extern "C" fn back_forward_list_nav_trampoline(
+    user_info: *mut c_void,
+    event_json: *const c_char,
+) {
+    if user_info.is_null() || event_json.is_null() {
+        return;
+    }
+
+    // SAFETY: `user_info` is non-null and points to a live holder.
+    let holder = unsafe { &*(user_info.cast::<BackForwardListNavCallbackHolder>()) };
+    // SAFETY: `event_json` is non-null and a valid C string for this call.
+    let json = unsafe { CStr::from_ptr(event_json) }.to_string_lossy();
+    let Ok(event) = serde_json::from_str::<BackForwardListNavigationEvent>(&json) else {
+        return;
+    };
     let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (holder.f)(event)));
 }
 
@@ -322,6 +352,7 @@ unsafe extern "C" fn msg_reply_trampoline(
 pub struct WebView {
     ptr: *mut c_void,
     nav_holder: Option<Box<NavCallbackHolder>>,
+    back_forward_nav_holder: Option<Box<BackForwardListNavCallbackHolder>>,
     msg_holder: Option<Box<MsgCallbackHolder>>,
     reply_msg_holder: Option<Box<ReplyMsgCallbackHolder>>,
 }
@@ -348,6 +379,7 @@ impl WebView {
         Ok(Self {
             ptr,
             nav_holder: None,
+            back_forward_nav_holder: None,
             msg_holder: None,
             reply_msg_holder: None,
         })
@@ -369,6 +401,7 @@ impl WebView {
         Ok(Self {
             ptr,
             nav_holder: None,
+            back_forward_nav_holder: None,
             msg_holder: None,
             reply_msg_holder: None,
         })
@@ -397,6 +430,25 @@ impl WebView {
             );
         }
         self.nav_holder = Some(holder);
+    }
+
+    /// Register a back/forward-list navigation callback.
+    pub fn set_back_forward_list_navigation_handler<F>(&mut self, f: F)
+    where
+        F: Fn(BackForwardListNavigationEvent) + Send + 'static,
+    {
+        let holder = Box::new(BackForwardListNavCallbackHolder { f: Box::new(f) });
+        let user_info = std::ptr::from_ref(holder.as_ref())
+            .cast_mut()
+            .cast::<c_void>();
+        unsafe {
+            ffi::wk_webview_set_back_forward_list_nav_callback(
+                self.ptr,
+                Some(back_forward_list_nav_trampoline as WKNavCallback),
+                user_info,
+            );
+        }
+        self.back_forward_nav_holder = Some(holder);
     }
 
     /// Register a script-message callback.
@@ -448,10 +500,27 @@ impl WebView {
         }
     }
 
+    /// Sets the policy used by `shouldGoToBackForwardListItem`.
+    pub fn set_back_forward_list_navigation_policy(&self, policy: BackForwardListNavigationPolicy) {
+        unsafe {
+            ffi::wk_webview_set_back_forward_list_navigation_policy(self.ptr, policy.as_raw());
+        }
+    }
+
     /// Returns the corresponding value from `WKWebView`.
     #[must_use]
     pub fn drain_navigation_events(&self) -> Vec<NavigationEvent> {
         unsafe { take_json_or_default(ffi::wk_webview_drain_navigation_events_json(self.ptr)) }
+    }
+
+    /// Returns back/forward-list navigation delegate events.
+    #[must_use]
+    pub fn drain_back_forward_list_navigation_events(&self) -> Vec<BackForwardListNavigationEvent> {
+        unsafe {
+            take_json_or_default(
+                ffi::wk_webview_drain_back_forward_list_navigation_events_json(self.ptr),
+            )
+        }
     }
 
     /// Sets the corresponding value on `WKWebView`.
@@ -1107,7 +1176,9 @@ impl Drop for WebView {
         if !self.ptr.is_null() {
             unsafe {
                 ffi::wk_webview_set_nav_callback(self.ptr, None, ptr::null_mut());
+                ffi::wk_webview_set_back_forward_list_nav_callback(self.ptr, None, ptr::null_mut());
                 ffi::wk_webview_set_msg_callback(self.ptr, None, ptr::null_mut());
+                ffi::wk_webview_set_msg_reply_callback(self.ptr, None, ptr::null_mut());
                 ffi::wk_webview_release(self.ptr);
             }
             self.ptr = ptr::null_mut();
@@ -1124,7 +1195,10 @@ mod tests {
         assert_eq!(MediaPlaybackState::from_raw(-1), MediaPlaybackState::None);
         assert_eq!(MediaPlaybackState::from_raw(1), MediaPlaybackState::Playing);
         assert_eq!(MediaPlaybackState::from_raw(2), MediaPlaybackState::Paused);
-        assert_eq!(MediaPlaybackState::from_raw(3), MediaPlaybackState::Suspended);
+        assert_eq!(
+            MediaPlaybackState::from_raw(3),
+            MediaPlaybackState::Suspended
+        );
     }
 
     #[test]
@@ -1139,10 +1213,19 @@ mod tests {
 
     #[test]
     fn fullscreen_state_from_raw_covers_all_variants() {
-        assert_eq!(FullscreenState::from_raw(-1), FullscreenState::NotInFullscreen);
-        assert_eq!(FullscreenState::from_raw(1), FullscreenState::EnteringFullscreen);
+        assert_eq!(
+            FullscreenState::from_raw(-1),
+            FullscreenState::NotInFullscreen
+        );
+        assert_eq!(
+            FullscreenState::from_raw(1),
+            FullscreenState::EnteringFullscreen
+        );
         assert_eq!(FullscreenState::from_raw(2), FullscreenState::InFullscreen);
-        assert_eq!(FullscreenState::from_raw(3), FullscreenState::ExitingFullscreen);
+        assert_eq!(
+            FullscreenState::from_raw(3),
+            FullscreenState::ExitingFullscreen
+        );
     }
 
     #[test]

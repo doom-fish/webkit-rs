@@ -1,6 +1,6 @@
-# webkit coverage audit (vs MacOSX26.2.sdk)
+# webkit coverage audit (vs MacOSX26.5.sdk)
 
-Full top-level symbol audit of WebKit.framework headers after filtering out declarations unavailable on macOS. Legacy DOM* / Web* APIs remain listed as EXEMPT because Apple deprecated them on macOS and this crate intentionally targets the modern WK* surface.
+Full top-level symbol audit of WebKit.framework headers after filtering out declarations unavailable on macOS. Legacy DOM* / Web* APIs remain listed as EXEMPT because Apple deprecated them on macOS and this crate intentionally targets the modern WK* surface. Member-level MacOSX26.5 completeness closures are tracked in `COVERAGE.md`.
 
 SDK_PUBLIC_SYMBOLS: 367
 VERIFIED: 134

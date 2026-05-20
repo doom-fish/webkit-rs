@@ -1,4 +1,5 @@
 import Foundation
+import Network
 import WebKit
 
 private func wkWebsiteDataRecordDictionary(_ record: WKWebsiteDataRecord) -> [String: Any] {
@@ -229,6 +230,98 @@ public func wk_website_data_store_remove_data_modified_since(
         outErr?.pointee = wkCString(error)
     }
     return status
+}
+
+@available(macOS 14.0, *)
+@_cdecl("wk_website_data_store_copy_proxy_configurations")
+public func wk_website_data_store_copy_proxy_configurations(
+    _ ptr: UnsafeMutableRawPointer?,
+    _ outProxyConfigurations: UnsafeMutablePointer<UnsafeMutablePointer<UnsafeMutableRawPointer?>?>?,
+    _ outLen: UnsafeMutablePointer<Int>?,
+    _ outErr: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> Int32 {
+    guard let ptr, let outProxyConfigurations, let outLen else {
+        outErr?.pointee = wkCString("missing website data store or output buffers")
+        return WK_INVALID_ARGUMENT
+    }
+    guard #available(macOS 14.0, *) else {
+        outErr?.pointee = wkCString("proxyConfigurations requires macOS 14.0+")
+        return WK_UNSUPPORTED
+    }
+    let box: WKWebsiteDataStoreBox = wkBorrow(ptr)
+    let proxyConfigurations = box.dataStore.proxyConfigurations
+    guard !proxyConfigurations.isEmpty else {
+        outProxyConfigurations.pointee = nil
+        outLen.pointee = 0
+        return WK_OK
+    }
+
+    let buffer = UnsafeMutablePointer<UnsafeMutableRawPointer?>.allocate(capacity: proxyConfigurations.count)
+    for (index, proxyConfiguration) in proxyConfigurations.enumerated() {
+        buffer[index] = wkRetain(WKProxyConfigurationBox(proxyConfiguration: proxyConfiguration))
+    }
+    outProxyConfigurations.pointee = buffer
+    outLen.pointee = proxyConfigurations.count
+    return WK_OK
+}
+
+@available(macOS 14.0, *)
+@_cdecl("wk_website_data_store_set_proxy_configurations")
+public func wk_website_data_store_set_proxy_configurations(
+    _ ptr: UnsafeMutableRawPointer?,
+    _ proxyConfigurations: UnsafePointer<UnsafeMutableRawPointer?>?,
+    _ len: Int,
+    _ outErr: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> Int32 {
+    guard let ptr else {
+        outErr?.pointee = wkCString("missing website data store")
+        return WK_INVALID_ARGUMENT
+    }
+    guard #available(macOS 14.0, *) else {
+        outErr?.pointee = wkCString("proxyConfigurations requires macOS 14.0+")
+        return WK_UNSUPPORTED
+    }
+    let box: WKWebsiteDataStoreBox = wkBorrow(ptr)
+    guard len == 0 || proxyConfigurations != nil else {
+        outErr?.pointee = wkCString("missing proxy configurations")
+        return WK_INVALID_ARGUMENT
+    }
+    guard let proxyConfigurations else {
+        box.dataStore.proxyConfigurations = []
+        return WK_OK
+    }
+
+    var resolved: [Network.ProxyConfiguration] = []
+    resolved.reserveCapacity(len)
+    for index in 0..<len {
+        guard let rawProxyConfiguration = proxyConfigurations[index] else {
+            outErr?.pointee = wkCString("proxy configuration entry was null")
+            return WK_INVALID_ARGUMENT
+        }
+        let proxyConfigurationBox: WKProxyConfigurationBox = wkBorrow(rawProxyConfiguration)
+        resolved.append(proxyConfigurationBox.proxyConfiguration)
+    }
+    box.dataStore.proxyConfigurations = resolved
+    return WK_OK
+}
+
+@available(macOS 14.0, *)
+@_cdecl("wk_website_data_store_clear_proxy_configurations")
+public func wk_website_data_store_clear_proxy_configurations(
+    _ ptr: UnsafeMutableRawPointer?,
+    _ outErr: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> Int32 {
+    guard let ptr else {
+        outErr?.pointee = wkCString("missing website data store")
+        return WK_INVALID_ARGUMENT
+    }
+    guard #available(macOS 14.0, *) else {
+        outErr?.pointee = wkCString("proxyConfigurations requires macOS 14.0+")
+        return WK_UNSUPPORTED
+    }
+    let box: WKWebsiteDataStoreBox = wkBorrow(ptr)
+    box.dataStore.proxyConfigurations = []
+    return WK_OK
 }
 
 @available(macOS 26.0, *)

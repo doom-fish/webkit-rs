@@ -18,6 +18,11 @@ enum WKRustNavigationResponsePolicy: Int32 {
     case download = 2
 }
 
+enum WKRustBackForwardListNavigationPolicy: Int32 {
+    case cancel = 0
+    case allow = 1
+}
+
 private func wkEmitNavCallback(_ callback: WKNavCallback?, _ userInfo: UnsafeMutableRawPointer?, _ payload: [String: Any]) {
     let json = wkJSONString(payload)
     json.withCString { callback?(userInfo, $0) }
@@ -113,6 +118,43 @@ private func wkNavigationResponseDictionary(_ navigationResponse: WKNavigationRe
     return dictionary
 }
 
+private func wkRelativeIndex(of item: WKBackForwardListItem, in list: WKBackForwardList) -> Int {
+    var backIndex = -1
+    while let candidate = list.item(at: backIndex) {
+        if candidate === item {
+            return backIndex
+        }
+        backIndex -= 1
+    }
+
+    if let currentItem = list.item(at: 0), currentItem === item {
+        return 0
+    }
+
+    var forwardIndex = 1
+    while let candidate = list.item(at: forwardIndex) {
+        if candidate === item {
+            return forwardIndex
+        }
+        forwardIndex += 1
+    }
+    return 0
+}
+
+private func wkBackForwardListNavigationEvent(
+    item: WKBackForwardListItem,
+    in webView: WKWebView,
+    willUseInstantBack: Bool
+) -> [String: Any] {
+    [
+        "item": wkBackForwardListItemDictionary(
+            item,
+            relativeIndex: wkRelativeIndex(of: item, in: webView.backForwardList)
+        ),
+        "willUseInstantBack": willUseInstantBack
+    ]
+}
+
 private func wkNavigationEvent(
     kind: String,
     url: String,
@@ -137,19 +179,32 @@ final class WKRustNavDelegate: NSObject, WKNavigationDelegate {
     weak var owner: WKWebViewBox?
     var callback: WKNavCallback?
     var userInfo: UnsafeMutableRawPointer?
+    var backForwardListCallback: WKNavCallback?
+    var backForwardListUserInfo: UnsafeMutableRawPointer?
     var events: [[String: Any]] = []
+    var backForwardListEvents: [[String: Any]] = []
     var loadDone = false
     var loadError: String?
     var actionPolicy: WKRustNavigationActionPolicy = .allow
     var responsePolicy: WKRustNavigationResponsePolicy = .allow
+    var backForwardListPolicy: WKRustBackForwardListNavigationPolicy = .allow
 
     func drainEvents() -> UnsafeMutablePointer<CChar>? {
         wkDrainEvents(&events)
     }
 
+    func drainBackForwardListEvents() -> UnsafeMutablePointer<CChar>? {
+        wkDrainEvents(&backForwardListEvents)
+    }
+
     private func emit(_ payload: [String: Any]) {
         events.append(payload)
         wkEmitNavCallback(callback, userInfo, payload)
+    }
+
+    private func emitBackForwardList(_ payload: [String: Any]) {
+        backForwardListEvents.append(payload)
+        wkEmitNavCallback(backForwardListCallback, backForwardListUserInfo, payload)
     }
 
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
@@ -284,5 +339,22 @@ final class WKRustNavDelegate: NSObject, WKNavigationDelegate {
                 navigationResponse: navigationResponse
             )
         )
+    }
+
+    @available(macOS 26.0, *)
+    func webView(
+        _ webView: WKWebView,
+        shouldGoTo backForwardListItem: WKBackForwardListItem,
+        willUseInstantBack: Bool,
+        completionHandler: @escaping (Bool) -> Void
+    ) {
+        emitBackForwardList(
+            wkBackForwardListNavigationEvent(
+                item: backForwardListItem,
+                in: webView,
+                willUseInstantBack: willUseInstantBack
+            )
+        )
+        completionHandler(backForwardListPolicy == .allow)
     }
 }

@@ -99,3 +99,27 @@ fn navigation_event_deserializes_typed_response_details() -> Result<(), Box<dyn 
     );
     Ok(())
 }
+
+#[test]
+fn back_forward_list_navigation_event_deserializes_from_json(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let event: BackForwardListNavigationEvent = serde_json::from_str(
+        r#"{
+            "item":{
+                "relativeIndex":-1,
+                "url":"https://first.example.test/",
+                "title":"First",
+                "initialURL":"https://first.example.test/"
+            },
+            "willUseInstantBack":true
+        }"#,
+    )?;
+
+    assert_eq!(BackForwardListNavigationPolicy::Cancel.as_raw(), 0);
+    assert_eq!(BackForwardListNavigationPolicy::Allow.as_raw(), 1);
+    assert_eq!(event.item.relative_index, -1);
+    assert_eq!(event.item.url, "https://first.example.test/");
+    assert_eq!(event.item.initial_url, "https://first.example.test/");
+    assert!(event.will_use_instant_back);
+    Ok(())
+}

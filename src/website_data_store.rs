@@ -12,6 +12,7 @@ use crate::private::{
     maybe_take_error, take_bytes, take_json_or_default, take_optional_string, to_cstring,
     to_json_cstring,
 };
+use crate::proxy_configuration::ProxyConfiguration;
 
 /// Wraps `WKWebsiteDataType`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -267,6 +268,79 @@ impl WebsiteDataStore {
     #[must_use]
     pub fn identifier(&self) -> Option<String> {
         unsafe { take_optional_string(ffi::wk_website_data_store_copy_identifier(self.ptr)) }
+    }
+
+    /// Returns the proxy configurations applied to the data store.
+    pub fn proxy_configurations(&self) -> Result<Vec<ProxyConfiguration>, WebKitError> {
+        let mut out_proxy_configurations = ptr::null_mut();
+        let mut out_len = 0;
+        let mut out_err = ptr::null_mut();
+        let status = unsafe {
+            ffi::wk_website_data_store_copy_proxy_configurations(
+                self.ptr,
+                &mut out_proxy_configurations,
+                &mut out_len,
+                &mut out_err,
+            )
+        };
+        if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
+            return Err(error);
+        }
+        if out_proxy_configurations.is_null() || out_len == 0 {
+            return Ok(Vec::new());
+        }
+
+        let raw_proxy_configurations =
+            unsafe { std::slice::from_raw_parts(out_proxy_configurations, out_len) };
+        let mut proxy_configurations = Vec::with_capacity(raw_proxy_configurations.len());
+        for &raw_proxy_configuration in raw_proxy_configurations {
+            let Some(proxy_configuration) = ProxyConfiguration::from_ptr(raw_proxy_configuration)
+            else {
+                unsafe { ffi::wk_pointer_array_free(out_proxy_configurations) };
+                return Err(WebKitError::FrameworkError(
+                    "proxy_configurations returned null proxy configuration".to_owned(),
+                ));
+            };
+            proxy_configurations.push(proxy_configuration);
+        }
+        unsafe { ffi::wk_pointer_array_free(out_proxy_configurations) };
+        Ok(proxy_configurations)
+    }
+
+    /// Sets the proxy configurations applied to the data store.
+    pub fn set_proxy_configurations(
+        &self,
+        proxy_configurations: &[ProxyConfiguration],
+    ) -> Result<(), WebKitError> {
+        let raw_proxy_configurations = proxy_configurations
+            .iter()
+            .map(ProxyConfiguration::as_ptr)
+            .collect::<Vec<_>>();
+        let mut out_err = ptr::null_mut();
+        let status = unsafe {
+            ffi::wk_website_data_store_set_proxy_configurations(
+                self.ptr,
+                raw_proxy_configurations.as_ptr(),
+                raw_proxy_configurations.len(),
+                &mut out_err,
+            )
+        };
+        if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
+            return Err(error);
+        }
+        Ok(())
+    }
+
+    /// Clears any proxy configurations applied to the data store.
+    pub fn clear_proxy_configurations(&self) -> Result<(), WebKitError> {
+        let mut out_err = ptr::null_mut();
+        let status = unsafe {
+            ffi::wk_website_data_store_clear_proxy_configurations(self.ptr, &mut out_err)
+        };
+        if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
+            return Err(error);
+        }
+        Ok(())
     }
 
     /// Calls the corresponding `WKWebsiteDataStore` API.

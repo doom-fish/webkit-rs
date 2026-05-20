@@ -281,6 +281,18 @@ public func wk_webview_set_nav_callback(
     box.navDelegate.userInfo = userInfo
 }
 
+@_cdecl("wk_webview_set_back_forward_list_nav_callback")
+public func wk_webview_set_back_forward_list_nav_callback(
+    _ ptr: UnsafeMutableRawPointer?,
+    _ callback: WKNavCallback?,
+    _ userInfo: UnsafeMutableRawPointer?
+) {
+    guard let ptr else { return }
+    let box: WKWebViewBox = wkBorrow(ptr)
+    box.navDelegate.backForwardListCallback = callback
+    box.navDelegate.backForwardListUserInfo = userInfo
+}
+
 @_cdecl("wk_webview_set_msg_callback")
 public func wk_webview_set_msg_callback(
     _ ptr: UnsafeMutableRawPointer?,
@@ -317,11 +329,31 @@ public func wk_webview_set_navigation_delegate_config(
     box.navDelegate.responsePolicy = WKRustNavigationResponsePolicy(rawValue: responsePolicy) ?? .allow
 }
 
+@_cdecl("wk_webview_set_back_forward_list_navigation_policy")
+public func wk_webview_set_back_forward_list_navigation_policy(
+    _ ptr: UnsafeMutableRawPointer?,
+    _ policy: Int32
+) {
+    guard let ptr else { return }
+    let box: WKWebViewBox = wkBorrow(ptr)
+    box.navDelegate.backForwardListPolicy =
+        WKRustBackForwardListNavigationPolicy(rawValue: policy) ?? .allow
+}
+
 @_cdecl("wk_webview_drain_navigation_events_json")
 public func wk_webview_drain_navigation_events_json(_ ptr: UnsafeMutableRawPointer?) -> UnsafeMutablePointer<CChar>? {
     guard let ptr else { return wkCString("[]") }
     let box: WKWebViewBox = wkBorrow(ptr)
     return box.navDelegate.drainEvents()
+}
+
+@_cdecl("wk_webview_drain_back_forward_list_navigation_events_json")
+public func wk_webview_drain_back_forward_list_navigation_events_json(
+    _ ptr: UnsafeMutableRawPointer?
+) -> UnsafeMutablePointer<CChar>? {
+    guard let ptr else { return wkCString("[]") }
+    let box: WKWebViewBox = wkBorrow(ptr)
+    return box.navDelegate.drainBackForwardListEvents()
 }
 
 @_cdecl("wk_webview_set_ui_delegate_config")
