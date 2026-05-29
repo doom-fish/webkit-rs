@@ -1323,14 +1323,11 @@ impl WebExtension {
     }
 }
 
-impl Drop for WebExtension {
-    fn drop(&mut self) {
-        if !self.ptr.is_null() {
-            unsafe { ffi::wk_web_extension_release(self.ptr) }
-            self.ptr = ptr::null_mut();
-        }
-    }
-}
+crate::utils::retained::wk_retained!(
+    WebExtension,
+    field = ptr,
+    release = ffi::wk_web_extension_release,
+);
 
 /// Wraps `WKWebExtensionMatchPattern`.
 pub struct WebExtensionMatchPattern {
@@ -1485,14 +1482,11 @@ impl WebExtensionMatchPattern {
     }
 }
 
-impl Drop for WebExtensionMatchPattern {
-    fn drop(&mut self) {
-        if !self.ptr.is_null() {
-            unsafe { ffi::wk_web_extension_match_pattern_release(self.ptr) }
-            self.ptr = ptr::null_mut();
-        }
-    }
-}
+crate::utils::retained::wk_retained!(
+    WebExtensionMatchPattern,
+    field = ptr,
+    release = ffi::wk_web_extension_match_pattern_release,
+);
 
 /// Configures `WKWebExtensionController.Configuration`.
 pub struct WebExtensionControllerConfiguration {
@@ -1601,14 +1595,11 @@ impl WebExtensionControllerConfiguration {
     }
 }
 
-impl Drop for WebExtensionControllerConfiguration {
-    fn drop(&mut self) {
-        if !self.ptr.is_null() {
-            unsafe { ffi::wk_web_extension_controller_configuration_release(self.ptr) }
-            self.ptr = ptr::null_mut();
-        }
-    }
-}
+crate::utils::retained::wk_retained!(
+    WebExtensionControllerConfiguration,
+    field = ptr,
+    release = ffi::wk_web_extension_controller_configuration_release,
+);
 
 /// Captures data returned by `WKWebExtensionController.Configuration`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -1793,14 +1784,11 @@ impl WebExtensionController {
     }
 }
 
-impl Drop for WebExtensionController {
-    fn drop(&mut self) {
-        if !self.ptr.is_null() {
-            unsafe { ffi::wk_web_extension_controller_release(self.ptr) }
-            self.ptr = ptr::null_mut();
-        }
-    }
-}
+crate::utils::retained::wk_retained!(
+    WebExtensionController,
+    field = ptr,
+    release = ffi::wk_web_extension_controller_release,
+);
 
 /// Wraps `WKWebExtensionContext`.
 pub struct WebExtensionContext {
@@ -2100,14 +2088,11 @@ impl WebExtensionContext {
     }
 }
 
-impl Drop for WebExtensionContext {
-    fn drop(&mut self) {
-        if !self.ptr.is_null() {
-            unsafe { ffi::wk_web_extension_context_release(self.ptr) }
-            self.ptr = ptr::null_mut();
-        }
-    }
-}
+crate::utils::retained::wk_retained!(
+    WebExtensionContext,
+    field = ptr,
+    release = ffi::wk_web_extension_context_release,
+);
 
 /// Safe wrapper around a `WKWebExtensionMessagePort` handle.
 pub struct WebExtensionMessagePort {
@@ -2167,14 +2152,11 @@ impl WebExtensionMessagePort {
     }
 }
 
-impl Drop for WebExtensionMessagePort {
-    fn drop(&mut self) {
-        if !self.ptr.is_null() {
-            unsafe { ffi::wk_web_extension_message_port_release(self.ptr) }
-            self.ptr = ptr::null_mut();
-        }
-    }
-}
+crate::utils::retained::wk_retained!(
+    WebExtensionMessagePort,
+    field = ptr,
+    release = ffi::wk_web_extension_message_port_release,
+);
 
 /// Notification names emitted by `WKWebExtensionContext`.
 pub struct WebExtensionContextNotifications;

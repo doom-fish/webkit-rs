@@ -208,14 +208,11 @@ impl ProxyConfiguration {
     }
 }
 
-impl Drop for ProxyConfiguration {
-    fn drop(&mut self) {
-        if !self.ptr.is_null() {
-            unsafe { ffi::wk_proxy_configuration_release(self.ptr) }
-            self.ptr = ptr::null_mut();
-        }
-    }
-}
+crate::utils::retained::wk_retained!(
+    ProxyConfiguration,
+    field = ptr,
+    release = ffi::wk_proxy_configuration_release,
+);
 
 #[cfg(test)]
 mod tests {

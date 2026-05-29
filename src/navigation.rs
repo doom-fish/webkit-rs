@@ -1,6 +1,5 @@
 use core::ffi::c_void;
 use core::hash::{Hash, Hasher};
-use core::ptr;
 
 use crate::ffi;
 
@@ -50,11 +49,8 @@ impl Hash for Navigation {
     }
 }
 
-impl Drop for Navigation {
-    fn drop(&mut self) {
-        if !self.ptr.is_null() {
-            unsafe { ffi::wk_navigation_release(self.ptr) }
-            self.ptr = ptr::null_mut();
-        }
-    }
-}
+crate::utils::retained::wk_retained!(
+    Navigation,
+    field = ptr,
+    release = ffi::wk_navigation_release
+);

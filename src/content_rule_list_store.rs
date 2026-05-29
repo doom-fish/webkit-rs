@@ -37,14 +37,11 @@ impl ContentRuleList {
     }
 }
 
-impl Drop for ContentRuleList {
-    fn drop(&mut self) {
-        if !self.ptr.is_null() {
-            unsafe { ffi::wk_content_rule_list_release(self.ptr) }
-            self.ptr = ptr::null_mut();
-        }
-    }
-}
+crate::utils::retained::wk_retained!(
+    ContentRuleList,
+    field = ptr,
+    release = ffi::wk_content_rule_list_release,
+);
 
 /// Wraps `WKContentRuleListStore`.
 pub struct ContentRuleListStore {
@@ -175,11 +172,8 @@ impl ContentRuleListStore {
     }
 }
 
-impl Drop for ContentRuleListStore {
-    fn drop(&mut self) {
-        if !self.ptr.is_null() {
-            unsafe { ffi::wk_content_rule_list_store_release(self.ptr) }
-            self.ptr = ptr::null_mut();
-        }
-    }
-}
+crate::utils::retained::wk_retained!(
+    ContentRuleListStore,
+    field = ptr,
+    release = ffi::wk_content_rule_list_store_release,
+);

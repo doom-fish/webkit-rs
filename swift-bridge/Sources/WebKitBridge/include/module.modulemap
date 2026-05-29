@@ -1,4 +1,0 @@
-module WebKitBridge {
-    header "WebKitBridge.h"
-    export *
-}

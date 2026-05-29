@@ -52,6 +52,7 @@ pub mod ui_delegate;
 pub mod url_scheme;
 /// Rust bindings for `WKUserScript`.
 pub mod user_script;
+mod utils;
 /// Rust bindings for `WKWebExtension`.
 pub mod web_extension;
 /// Rust bindings for `WKWebsiteDataStore`.

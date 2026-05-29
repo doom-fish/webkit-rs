@@ -245,11 +245,8 @@ impl HttpCookieStore {
     }
 }
 
-impl Drop for HttpCookieStore {
-    fn drop(&mut self) {
-        if !self.ptr.is_null() {
-            unsafe { ffi::wk_http_cookie_store_release(self.ptr) }
-            self.ptr = ptr::null_mut();
-        }
-    }
-}
+crate::utils::retained::wk_retained!(
+    HttpCookieStore,
+    field = ptr,
+    release = ffi::wk_http_cookie_store_release,
+);

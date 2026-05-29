@@ -15,7 +15,6 @@ let package = Package(
     targets: [
         .target(
             name: "WebKitBridge",
-            path: "Sources/WebKitBridge",
-            publicHeadersPath: "include")
+            path: "Sources/WebKitBridge")
     ]
 )

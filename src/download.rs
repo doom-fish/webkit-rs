@@ -134,11 +134,4 @@ impl Download {
     }
 }
 
-impl Drop for Download {
-    fn drop(&mut self) {
-        if !self.ptr.is_null() {
-            unsafe { ffi::wk_download_release(self.ptr) }
-            self.ptr = ptr::null_mut();
-        }
-    }
-}
+crate::utils::retained::wk_retained!(Download, field = ptr, release = ffi::wk_download_release);

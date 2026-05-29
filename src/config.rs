@@ -305,14 +305,7 @@ impl WebViewConfiguration {
     }
 }
 
-impl Drop for WebViewConfiguration {
-    fn drop(&mut self) {
-        if !self.0.is_null() {
-            unsafe { ffi::wk_config_release(self.0) }
-            self.0 = ptr::null_mut();
-        }
-    }
-}
+crate::utils::retained::wk_retained!(WebViewConfiguration, release = ffi::wk_config_release);
 
 #[cfg(test)]
 mod tests {

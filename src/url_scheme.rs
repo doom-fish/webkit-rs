@@ -169,14 +169,11 @@ impl UrlSchemeTask {
     }
 }
 
-impl Drop for UrlSchemeTask {
-    fn drop(&mut self) {
-        if !self.ptr.is_null() {
-            unsafe { ffi::wk_url_scheme_task_release(self.ptr) }
-            self.ptr = ptr::null_mut();
-        }
-    }
-}
+crate::utils::retained::wk_retained!(
+    UrlSchemeTask,
+    field = ptr,
+    release = ffi::wk_url_scheme_task_release,
+);
 
 /// Trait mirroring the `WKURLSchemeHandler` protocol.
 pub trait UrlSchemeHandler: Send + Sync + 'static {

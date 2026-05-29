@@ -465,11 +465,8 @@ impl WebsiteDataStore {
     }
 }
 
-impl Drop for WebsiteDataStore {
-    fn drop(&mut self) {
-        if !self.ptr.is_null() {
-            unsafe { ffi::wk_website_data_store_release(self.ptr) }
-            self.ptr = ptr::null_mut();
-        }
-    }
-}
+crate::utils::retained::wk_retained!(
+    WebsiteDataStore,
+    field = ptr,
+    release = ffi::wk_website_data_store_release,
+);

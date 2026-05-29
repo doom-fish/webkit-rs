@@ -248,11 +248,8 @@ impl AttributedString {
     }
 }
 
-impl Drop for AttributedString {
-    fn drop(&mut self) {
-        if !self.ptr.is_null() {
-            unsafe { ffi::wk_attributed_string_release(self.ptr) }
-            self.ptr = ptr::null_mut();
-        }
-    }
-}
+crate::utils::retained::wk_retained!(
+    AttributedString,
+    field = ptr,
+    release = ffi::wk_attributed_string_release,
+);
