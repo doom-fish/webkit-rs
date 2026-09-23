@@ -1,9 +1,9 @@
 import Foundation
 import WebKit
 
-func wkMakeFindConfiguration(from jsonCString: UnsafePointer<CChar>?) -> WKFindConfiguration {
+func wkMakeFindConfiguration(from dictionary: [String: Any]?) -> WKFindConfiguration {
     let configuration = WKFindConfiguration()
-    guard let dictionary = wkJSONObject(from: jsonCString) as? [String: Any] else {
+    guard let dictionary else {
         return configuration
     }
     if let backwards = dictionary["backwards"] as? Bool {
@@ -32,20 +32,21 @@ public func wk_webview_find_string(
     }
     let box: WKWebViewBox = wkBorrow(ptr)
     let searchString = String(cString: query)
-    let configuration = wkMakeFindConfiguration(from: configurationJson)
+    let configurationDictionary = wkJSONObject(from: configurationJson) as? [String: Any]
 
-    let (status, result, error): (Int32, WKFindResult?, String?) = wkWaitForAsync { completion in
+    let (status, matchFound, error): (Int32, Bool?, String?) = wkWaitForAsync { completion in
         DispatchQueue.main.async {
+            let configuration = wkMakeFindConfiguration(from: configurationDictionary)
             box.webView.find(searchString, configuration: configuration) { result in
-                completion(result, nil)
+                completion(result.matchFound, nil)
             }
         }
     }
     if let error {
         outErr?.pointee = wkCString(error)
     }
-    if let result {
-        outResult?.pointee = wkCString(wkJSONString(["matchFound": result.matchFound]))
+    if let matchFound {
+        outResult?.pointee = wkCString(wkJSONString(["matchFound": matchFound]))
     } else {
         outResult?.pointee = wkCString("{\"matchFound\":false}")
     }

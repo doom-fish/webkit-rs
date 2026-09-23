@@ -141,9 +141,6 @@ private func wkApplyPreferences(_ dictionary: [String: Any], to configuration: W
 
 final class WKConfigBox: NSObject {
     let config: WKWebViewConfiguration
-    var registeredHandlerNames: [String] = []
-    var registeredReplyHandlerNames: [String] = []
-    var registeredURLSchemeHandlers: [String: AnyObject] = [:]
 
     init(configuration: WKWebViewConfiguration) {
         self.config = configuration
@@ -153,13 +150,13 @@ final class WKConfigBox: NSObject {
 
 @_cdecl("wk_config_new")
 public func wk_config_new() -> UnsafeMutableRawPointer {
-    wkRetain(WKConfigBox(configuration: WKWebViewConfiguration()))
+    wkOnMain { wkRetain(WKConfigBox(configuration: WKWebViewConfiguration())) }
 }
 
 @_cdecl("wk_config_release")
 public func wk_config_release(_ ptr: UnsafeMutableRawPointer?) {
     guard let ptr else { return }
-    wkRelease(ptr)
+    wkReleaseOnMain(ptr)
 }
 
 @_cdecl("wk_config_set_application_name")
@@ -169,31 +166,35 @@ public func wk_config_set_application_name(
 ) {
     guard let ptr, let name else { return }
     let box: WKConfigBox = wkBorrow(ptr)
-    box.config.applicationNameForUserAgent = String(cString: name)
+    let applicationName = String(cString: name)
+    wkOnMain {
+        box.config.applicationNameForUserAgent = applicationName
+    }
 }
 
 @_cdecl("wk_config_copy_application_name")
 public func wk_config_copy_application_name(_ ptr: UnsafeMutableRawPointer?) -> UnsafeMutablePointer<CChar>? {
     guard let ptr else { return nil }
     let box: WKConfigBox = wkBorrow(ptr)
-    return wkCString(box.config.applicationNameForUserAgent ?? "")
+    return wkCString(wkOnMain { box.config.applicationNameForUserAgent ?? "" })
 }
 
 @_cdecl("wk_config_set_allows_airplay")
 public func wk_config_set_allows_airplay(_ ptr: UnsafeMutableRawPointer?, _ value: Bool) {
     guard let ptr else { return }
     let box: WKConfigBox = wkBorrow(ptr)
-    box.config.allowsAirPlayForMediaPlayback = value
+    wkOnMain {
+        box.config.allowsAirPlayForMediaPlayback = value
+    }
 }
 
 @_cdecl("wk_config_get_allows_airplay")
 public func wk_config_get_allows_airplay(_ ptr: UnsafeMutableRawPointer?) -> Bool {
     guard let ptr else { return false }
     let box: WKConfigBox = wkBorrow(ptr)
-    return box.config.allowsAirPlayForMediaPlayback
+    return wkOnMain { box.config.allowsAirPlayForMediaPlayback }
 }
 
-@available(macOS 26.0, *)
 @_cdecl("wk_config_set_shows_system_screen_time_blocking_view")
 public func wk_config_set_shows_system_screen_time_blocking_view(
     _ ptr: UnsafeMutableRawPointer?,
@@ -209,11 +210,12 @@ public func wk_config_set_shows_system_screen_time_blocking_view(
         return WK_UNSUPPORTED
     }
     let box: WKConfigBox = wkBorrow(ptr)
-    box.config.showsSystemScreenTimeBlockingView = value
+    wkOnMain {
+        box.config.showsSystemScreenTimeBlockingView = value
+    }
     return WK_OK
 }
 
-@available(macOS 26.0, *)
 @_cdecl("wk_config_get_shows_system_screen_time_blocking_view")
 public func wk_config_get_shows_system_screen_time_blocking_view(
     _ ptr: UnsafeMutableRawPointer?,
@@ -229,7 +231,7 @@ public func wk_config_get_shows_system_screen_time_blocking_view(
         return WK_UNSUPPORTED
     }
     let box: WKConfigBox = wkBorrow(ptr)
-    outValue?.pointee = box.config.showsSystemScreenTimeBlockingView
+    outValue?.pointee = wkOnMain { box.config.showsSystemScreenTimeBlockingView }
     return WK_OK
 }
 
@@ -240,14 +242,16 @@ public func wk_config_set_media_types_requiring_user_action_for_playback(
 ) {
     guard let ptr else { return }
     let box: WKConfigBox = wkBorrow(ptr)
-    box.config.mediaTypesRequiringUserActionForPlayback = WKAudiovisualMediaTypes(rawValue: UInt(rawValue))
+    wkOnMain {
+        box.config.mediaTypesRequiringUserActionForPlayback = WKAudiovisualMediaTypes(rawValue: UInt(rawValue))
+    }
 }
 
 @_cdecl("wk_config_get_media_types_requiring_user_action_for_playback")
 public func wk_config_get_media_types_requiring_user_action_for_playback(_ ptr: UnsafeMutableRawPointer?) -> UInt64 {
     guard let ptr else { return 0 }
     let box: WKConfigBox = wkBorrow(ptr)
-    return UInt64(box.config.mediaTypesRequiringUserActionForPlayback.rawValue)
+    return wkOnMain { UInt64(box.config.mediaTypesRequiringUserActionForPlayback.rawValue) }
 }
 
 @_cdecl("wk_config_set_user_interface_direction_policy")
@@ -255,9 +259,9 @@ public func wk_config_set_user_interface_direction_policy(
     _ ptr: UnsafeMutableRawPointer?,
     _ rawValue: Int32
 ) {
-    guard let ptr else { return }
+    guard let ptr, let policy = WKUserInterfaceDirectionPolicy(rawValue: Int(rawValue)) else { return }
     let box: WKConfigBox = wkBorrow(ptr)
-    if let policy = WKUserInterfaceDirectionPolicy(rawValue: Int(rawValue)) {
+    wkOnMain {
         box.config.userInterfaceDirectionPolicy = policy
     }
 }
@@ -266,7 +270,7 @@ public func wk_config_set_user_interface_direction_policy(
 public func wk_config_get_user_interface_direction_policy(_ ptr: UnsafeMutableRawPointer?) -> Int32 {
     guard let ptr else { return 0 }
     let box: WKConfigBox = wkBorrow(ptr)
-    return Int32(box.config.userInterfaceDirectionPolicy.rawValue)
+    return wkOnMain { Int32(clamping: box.config.userInterfaceDirectionPolicy.rawValue) }
 }
 
 @_cdecl("wk_config_set_allows_content_javascript")
@@ -276,14 +280,16 @@ public func wk_config_set_allows_content_javascript(
 ) {
     guard let ptr else { return }
     let box: WKConfigBox = wkBorrow(ptr)
-    box.config.defaultWebpagePreferences.allowsContentJavaScript = value
+    wkOnMain {
+        box.config.defaultWebpagePreferences.allowsContentJavaScript = value
+    }
 }
 
 @_cdecl("wk_config_get_allows_content_javascript")
 public func wk_config_get_allows_content_javascript(_ ptr: UnsafeMutableRawPointer?) -> Bool {
     guard let ptr else { return true }
     let box: WKConfigBox = wkBorrow(ptr)
-    return box.config.defaultWebpagePreferences.allowsContentJavaScript
+    return wkOnMain { box.config.defaultWebpagePreferences.allowsContentJavaScript }
 }
 
 @_cdecl("wk_config_set_preferences_json")
@@ -297,14 +303,16 @@ public func wk_config_set_preferences_json(
         return
     }
     let box: WKConfigBox = wkBorrow(ptr)
-    wkApplyPreferences(dictionary, to: box.config)
+    wkOnMain {
+        wkApplyPreferences(dictionary, to: box.config)
+    }
 }
 
 @_cdecl("wk_config_copy_preferences_json")
 public func wk_config_copy_preferences_json(_ ptr: UnsafeMutableRawPointer?) -> UnsafeMutablePointer<CChar>? {
     guard let ptr else { return wkCString("{}") }
     let box: WKConfigBox = wkBorrow(ptr)
-    return wkCString(wkJSONString(wkPreferencesDictionary(from: box.config)))
+    return wkCString(wkOnMain { wkJSONString(wkPreferencesDictionary(from: box.config)) })
 }
 
 @_cdecl("wk_config_set_website_data_store")
@@ -315,21 +323,25 @@ public func wk_config_set_website_data_store(
     guard let ptr, let storePtr else { return }
     let box: WKConfigBox = wkBorrow(ptr)
     let storeBox: WKWebsiteDataStoreBox = wkBorrow(storePtr)
-    box.config.websiteDataStore = storeBox.dataStore
+    wkOnMain {
+        box.config.websiteDataStore = storeBox.dataStore
+    }
 }
 
 @_cdecl("wk_config_copy_website_data_store")
 public func wk_config_copy_website_data_store(_ ptr: UnsafeMutableRawPointer?) -> UnsafeMutableRawPointer? {
     guard let ptr else { return nil }
     let box: WKConfigBox = wkBorrow(ptr)
-    return wkRetain(WKWebsiteDataStoreBox(dataStore: box.config.websiteDataStore))
+    return wkOnMain { wkRetain(WKWebsiteDataStoreBox(dataStore: box.config.websiteDataStore)) }
 }
 
 @_cdecl("wk_config_use_nonpersistent_data_store")
 public func wk_config_use_nonpersistent_data_store(_ ptr: UnsafeMutableRawPointer?) {
     guard let ptr else { return }
     let box: WKConfigBox = wkBorrow(ptr)
-    box.config.websiteDataStore = .nonPersistent()
+    wkOnMain {
+        box.config.websiteDataStore = .nonPersistent()
+    }
 }
 
 @_cdecl("wk_config_add_content_rule_list")
@@ -340,7 +352,9 @@ public func wk_config_add_content_rule_list(
     guard let ptr, let ruleListPtr else { return }
     let box: WKConfigBox = wkBorrow(ptr)
     let ruleListBox: WKContentRuleListBox = wkBorrow(ruleListPtr)
-    box.config.userContentController.add(ruleListBox.ruleList)
+    wkOnMain {
+        box.config.userContentController.add(ruleListBox.ruleList)
+    }
 }
 
 @_cdecl("wk_config_remove_content_rule_list")
@@ -351,14 +365,18 @@ public func wk_config_remove_content_rule_list(
     guard let ptr, let ruleListPtr else { return }
     let box: WKConfigBox = wkBorrow(ptr)
     let ruleListBox: WKContentRuleListBox = wkBorrow(ruleListPtr)
-    box.config.userContentController.remove(ruleListBox.ruleList)
+    wkOnMain {
+        box.config.userContentController.remove(ruleListBox.ruleList)
+    }
 }
 
 @_cdecl("wk_config_remove_all_content_rule_lists")
 public func wk_config_remove_all_content_rule_lists(_ ptr: UnsafeMutableRawPointer?) {
     guard let ptr else { return }
     let box: WKConfigBox = wkBorrow(ptr)
-    box.config.userContentController.removeAllContentRuleLists()
+    wkOnMain {
+        box.config.userContentController.removeAllContentRuleLists()
+    }
 }
 
 @_cdecl("wk_config_add_user_script")
@@ -371,44 +389,24 @@ public func wk_config_add_user_script(
 ) {
     guard let ptr, let source else { return }
     let box: WKConfigBox = wkBorrow(ptr)
-    let script = wkMakeUserScript(
-        source: String(cString: source),
-        injectionTime: injectionTime,
-        mainFrameOnly: mainFrameOnly,
-        contentWorldName: contentWorldName.map(String.init(cString:))
-    )
-    box.config.userContentController.addUserScript(script)
+    let sourceString = String(cString: source)
+    let worldName = contentWorldName.map(String.init(cString:))
+    wkOnMain {
+        let script = wkMakeUserScript(
+            source: sourceString,
+            injectionTime: injectionTime,
+            mainFrameOnly: mainFrameOnly,
+            contentWorldName: worldName
+        )
+        box.config.userContentController.addUserScript(script)
+    }
 }
 
 @_cdecl("wk_config_remove_all_user_scripts")
 public func wk_config_remove_all_user_scripts(_ ptr: UnsafeMutableRawPointer?) {
     guard let ptr else { return }
     let box: WKConfigBox = wkBorrow(ptr)
-    box.config.userContentController.removeAllUserScripts()
-}
-
-@_cdecl("wk_config_add_message_handler_name")
-public func wk_config_add_message_handler_name(
-    _ ptr: UnsafeMutableRawPointer?,
-    _ name: UnsafePointer<CChar>?
-) {
-    guard let ptr, let name else { return }
-    let box: WKConfigBox = wkBorrow(ptr)
-    let handlerName = String(cString: name)
-    if !box.registeredHandlerNames.contains(handlerName) {
-        box.registeredHandlerNames.append(handlerName)
-    }
-}
-
-@_cdecl("wk_config_add_message_handler_with_reply_name")
-public func wk_config_add_message_handler_with_reply_name(
-    _ ptr: UnsafeMutableRawPointer?,
-    _ name: UnsafePointer<CChar>?
-) {
-    guard let ptr, let name else { return }
-    let box: WKConfigBox = wkBorrow(ptr)
-    let handlerName = String(cString: name)
-    if !box.registeredReplyHandlerNames.contains(handlerName) {
-        box.registeredReplyHandlerNames.append(handlerName)
+    wkOnMain {
+        box.config.userContentController.removeAllUserScripts()
     }
 }

@@ -13,5 +13,5 @@ final class WKNavigationBox: NSObject {
 @_cdecl("wk_navigation_release")
 public func wk_navigation_release(_ ptr: UnsafeMutableRawPointer?) {
     guard let ptr else { return }
-    wkRelease(ptr)
+    wkReleaseOnMain(ptr)
 }

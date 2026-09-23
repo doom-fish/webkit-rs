@@ -16,7 +16,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
     assert_eq!(result, "true|Rust");
     let events = view.drain_ui_events();
-    assert!(events.len() >= 3, "expected alert/confirm/prompt events");
+    assert!(
+        events.events.len() >= 3,
+        "expected alert/confirm/prompt events"
+    );
 
     println!("UI delegate returned {result}");
     Ok(())

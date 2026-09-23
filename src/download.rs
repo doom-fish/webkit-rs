@@ -4,8 +4,9 @@ use core::ptr;
 use serde::Deserialize;
 
 use crate::error::WebKitError;
+use crate::events::DrainedEvents;
 use crate::ffi;
-use crate::private::{maybe_take_error, take_bytes, take_json_or_default, take_string};
+use crate::private::{maybe_take_error, take_bytes, take_string};
 
 /// Wraps `WKDownloadRedirectPolicy` values.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -104,8 +105,10 @@ impl Download {
 
     /// Returns the corresponding value from `WKDownload`.
     #[must_use]
-    pub fn drain_events(&self) -> Vec<DownloadEvent> {
-        unsafe { take_json_or_default(ffi::wk_download_copy_events_json(self.ptr)) }
+    pub fn drain_events(&self) -> DrainedEvents<DownloadEvent> {
+        DrainedEvents::from_json(&unsafe {
+            take_string(ffi::wk_download_copy_events_json(self.ptr))
+        })
     }
 
     /// Calls the corresponding `WKDownload` API.
@@ -116,9 +119,9 @@ impl Download {
         let status = unsafe {
             ffi::wk_download_cancel(
                 self.ptr,
-                &mut out_resume_data,
-                &mut out_resume_data_len,
-                &mut out_err,
+                &raw mut out_resume_data,
+                &raw mut out_resume_data_len,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {

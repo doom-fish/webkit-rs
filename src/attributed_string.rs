@@ -136,8 +136,8 @@ impl AttributedString {
             ffi::wk_attributed_string_load_html_request(
                 request_url.as_ptr(),
                 options_json.as_ptr(),
-                &mut out_attributed_string,
-                &mut out_err,
+                &raw mut out_attributed_string,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -163,8 +163,8 @@ impl AttributedString {
             ffi::wk_attributed_string_load_html_file(
                 file_url.as_ptr(),
                 options_json.as_ptr(),
-                &mut out_attributed_string,
-                &mut out_err,
+                &raw mut out_attributed_string,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -190,8 +190,8 @@ impl AttributedString {
             ffi::wk_attributed_string_load_html_string(
                 html.as_ptr(),
                 options_json.as_ptr(),
-                &mut out_attributed_string,
-                &mut out_err,
+                &raw mut out_attributed_string,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -217,8 +217,8 @@ impl AttributedString {
                 html.as_ptr(),
                 html.len(),
                 options_json.as_ptr(),
-                &mut out_attributed_string,
-                &mut out_err,
+                &raw mut out_attributed_string,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {

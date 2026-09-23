@@ -4,6 +4,7 @@ use core::ptr;
 use std::ops::{BitOr, BitOrAssign};
 
 use crate::content_rule_list_store::ContentRuleList;
+use crate::content_world::ContentWorld;
 use crate::error::WebKitError;
 use crate::ffi;
 use crate::preferences::Preferences;
@@ -151,7 +152,11 @@ impl WebViewConfiguration {
     ) -> Result<(), WebKitError> {
         let mut out_err = ptr::null_mut();
         let status = unsafe {
-            ffi::wk_config_set_shows_system_screen_time_blocking_view(self.0, value, &mut out_err)
+            ffi::wk_config_set_shows_system_screen_time_blocking_view(
+                self.0,
+                value,
+                &raw mut out_err,
+            )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);
@@ -166,8 +171,8 @@ impl WebViewConfiguration {
         let status = unsafe {
             ffi::wk_config_get_shows_system_screen_time_blocking_view(
                 self.0,
-                &mut out_value,
-                &mut out_err,
+                &raw mut out_value,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -292,16 +297,83 @@ impl WebViewConfiguration {
     /// Register a message handler name so JavaScript can call
     /// `window.webkit.messageHandlers.<name>.postMessage(...)` and Rust can
     /// receive the message via [`crate::webview::WebView::set_message_handler`].
-    pub fn add_message_handler(&self, name: &str) {
+    pub fn add_message_handler(&self, name: &str, world: &ContentWorld) -> Result<(), WebKitError> {
         let c_name = to_cstring(name);
-        unsafe { ffi::wk_config_add_message_handler_name(self.0, c_name.as_ptr()) }
+        let (world_kind, world_name) = world.to_ffi();
+        let world_name_ptr = world_name
+            .as_ref()
+            .map_or(ptr::null(), |name| name.as_ptr());
+        let mut out_err = ptr::null_mut();
+        let status = unsafe {
+            ffi::wk_config_add_script_message_handler(
+                self.0,
+                c_name.as_ptr(),
+                world_kind,
+                world_name_ptr,
+                false,
+                &raw mut out_err,
+            )
+        };
+        if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
+            return Err(error);
+        }
+        Ok(())
     }
 
     /// Register a reply-capable message handler name so JavaScript can await the
     /// Promise returned by `postMessage(...)`.
-    pub fn add_message_handler_with_reply(&self, name: &str) {
+    pub fn add_message_handler_with_reply(
+        &self,
+        name: &str,
+        world: &ContentWorld,
+    ) -> Result<(), WebKitError> {
         let c_name = to_cstring(name);
-        unsafe { ffi::wk_config_add_message_handler_with_reply_name(self.0, c_name.as_ptr()) }
+        let (world_kind, world_name) = world.to_ffi();
+        let world_name_ptr = world_name
+            .as_ref()
+            .map_or(ptr::null(), |name| name.as_ptr());
+        let mut out_err = ptr::null_mut();
+        let status = unsafe {
+            ffi::wk_config_add_script_message_handler(
+                self.0,
+                c_name.as_ptr(),
+                world_kind,
+                world_name_ptr,
+                true,
+                &raw mut out_err,
+            )
+        };
+        if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
+            return Err(error);
+        }
+        Ok(())
+    }
+
+    #[allow(missing_docs)]
+    pub fn remove_message_handler(
+        &self,
+        name: &str,
+        world: &ContentWorld,
+    ) -> Result<(), WebKitError> {
+        let c_name = to_cstring(name);
+        let (world_kind, world_name) = world.to_ffi();
+        let world_name_ptr = world_name
+            .as_ref()
+            .map_or(ptr::null(), |name| name.as_ptr());
+        let mut out_err = ptr::null_mut();
+        let status = unsafe {
+            ffi::wk_config_remove_script_message_handler(
+                self.0,
+                c_name.as_ptr(),
+                world_kind,
+                world_name_ptr,
+                &raw mut out_err,
+            )
+        };
+        if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
+            return Err(error);
+        }
+        Ok(())
     }
 }
 

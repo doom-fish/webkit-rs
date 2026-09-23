@@ -24,15 +24,20 @@ pub use url_scheme::*;
 pub use web_extension::*;
 pub use website_data_store::*;
 
+pub type WKContextCallback = unsafe extern "C" fn(context: *mut c_void);
+
 pub type WKNavCallback = unsafe extern "C" fn(user_info: *mut c_void, event_json: *const c_char);
 
+pub type WKNavDecisionCallback =
+    unsafe extern "C" fn(user_info: *mut c_void, payload_json: *const c_char) -> i32;
+
 pub type WKMsgCallback =
-    unsafe extern "C" fn(user_info: *mut c_void, handler_name: *const c_char, body: *const c_char);
+    unsafe extern "C" fn(user_info: *mut c_void, message_json: *const c_char, frame: *mut c_void);
 
 pub type WKMsgReplyCallback = unsafe extern "C" fn(
     user_info: *mut c_void,
-    handler_name: *const c_char,
-    body: *const c_char,
+    message_json: *const c_char,
+    frame: *mut c_void,
     out_reply: *mut *mut c_char,
     out_err: *mut *mut c_char,
 ) -> i32;
@@ -43,6 +48,8 @@ unsafe extern "C" {
     pub fn wk_bytes_free(ptr: *mut u8, len: usize);
     pub fn wk_run_loop_pump(seconds: f64);
     pub fn wk_init_app();
+    pub fn wk_frame_info_retain(ptr: *mut c_void) -> *mut c_void;
+    pub fn wk_frame_info_release(ptr: *mut c_void);
 
     // Navigation / download lifecycle
     pub fn wk_navigation_release(ptr: *mut c_void);
@@ -101,8 +108,21 @@ unsafe extern "C" {
         content_world_name: *const c_char,
     );
     pub fn wk_config_remove_all_user_scripts(ptr: *mut c_void);
-    pub fn wk_config_add_message_handler_name(ptr: *mut c_void, name: *const c_char);
-    pub fn wk_config_add_message_handler_with_reply_name(ptr: *mut c_void, name: *const c_char);
+    pub fn wk_config_add_script_message_handler(
+        ptr: *mut c_void,
+        name: *const c_char,
+        world_kind: i32,
+        world_name: *const c_char,
+        reply: bool,
+        out_err: *mut *mut c_char,
+    ) -> i32;
+    pub fn wk_config_remove_script_message_handler(
+        ptr: *mut c_void,
+        name: *const c_char,
+        world_kind: i32,
+        world_name: *const c_char,
+        out_err: *mut *mut c_char,
+    ) -> i32;
 
     // WebView
     pub fn wk_webview_new(cfg: *mut c_void) -> *mut c_void;
@@ -111,21 +131,43 @@ unsafe extern "C" {
         ptr: *mut c_void,
         callback: Option<WKNavCallback>,
         user_info: *mut c_void,
+        retain: Option<WKContextCallback>,
+        release: Option<WKContextCallback>,
     );
     pub fn wk_webview_set_back_forward_list_nav_callback(
         ptr: *mut c_void,
         callback: Option<WKNavCallback>,
         user_info: *mut c_void,
+        retain: Option<WKContextCallback>,
+        release: Option<WKContextCallback>,
+    );
+    pub fn wk_webview_set_navigation_action_decision_callback(
+        ptr: *mut c_void,
+        callback: Option<WKNavDecisionCallback>,
+        user_info: *mut c_void,
+        retain: Option<WKContextCallback>,
+        release: Option<WKContextCallback>,
+    );
+    pub fn wk_webview_set_navigation_response_decision_callback(
+        ptr: *mut c_void,
+        callback: Option<WKNavDecisionCallback>,
+        user_info: *mut c_void,
+        retain: Option<WKContextCallback>,
+        release: Option<WKContextCallback>,
     );
     pub fn wk_webview_set_msg_callback(
         ptr: *mut c_void,
         callback: Option<WKMsgCallback>,
         user_info: *mut c_void,
+        retain: Option<WKContextCallback>,
+        release: Option<WKContextCallback>,
     );
     pub fn wk_webview_set_msg_reply_callback(
         ptr: *mut c_void,
         callback: Option<WKMsgReplyCallback>,
         user_info: *mut c_void,
+        retain: Option<WKContextCallback>,
+        release: Option<WKContextCallback>,
     );
     pub fn wk_webview_set_navigation_delegate_config(
         ptr: *mut c_void,
@@ -251,7 +293,11 @@ unsafe extern "C" {
     ) -> i32;
     pub fn wk_webview_call_async_js(
         ptr: *mut c_void,
-        js: *const c_char,
+        function_body: *const c_char,
+        arguments_json: *const c_char,
+        frame: *mut c_void,
+        world_kind: i32,
+        world_name: *const c_char,
         out_result: *mut *mut c_char,
         out_err: *mut *mut c_char,
     ) -> i32;
@@ -302,6 +348,7 @@ pub mod status {
     pub const INVALID_ARGUMENT: i32 = -1;
     pub const UNSUPPORTED: i32 = -2;
     pub const TIMED_OUT: i32 = -3;
+    pub const INVALID_STATE: i32 = -4;
     pub const FRAMEWORK_ERROR: i32 = -5;
     pub const UNKNOWN: i32 = -99;
 }

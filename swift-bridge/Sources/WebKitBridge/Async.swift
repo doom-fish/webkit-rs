@@ -53,18 +53,32 @@ public func wk_webview_evaluate_js_async(
 @_cdecl("wk_webview_call_async_js_async")
 public func wk_webview_call_async_js_async(
     _ ptr: UnsafeMutableRawPointer?,
-    _ js: UnsafePointer<CChar>?,
+    _ functionBody: UnsafePointer<CChar>?,
+    _ argumentsJson: UnsafePointer<CChar>?,
+    _ framePtr: UnsafeMutableRawPointer?,
+    _ worldKind: Int32,
+    _ worldName: UnsafePointer<CChar>?,
     cb: @convention(c) (UnsafePointer<CChar>?, UnsafePointer<CChar>?, UnsafeMutableRawPointer) -> Void,
     ctx: UnsafeMutableRawPointer
 ) {
-    guard let ptr, let js else {
-        "missing webview or js".withCString { cb(nil, $0, ctx) }
+    guard let ptr, let functionBody else {
+        "missing webview or function body".withCString { cb(nil, $0, ctx) }
+        return
+    }
+    guard let arguments = wkJavaScriptArguments(from: argumentsJson) else {
+        "callAsyncJavaScript arguments must be a JSON object".withCString { cb(nil, $0, ctx) }
         return
     }
     let box: WKWebViewBox = wkBorrow(ptr)
-    let script = String(cString: js)
+    let frame: WKFrameInfoBox? = framePtr.map { wkBorrow($0) }
+    let script = String(cString: functionBody)
+    let worldNameString = worldName.map(String.init(cString:))
     DispatchQueue.main.async {
-        box.webView.callAsyncJavaScript(script, arguments: [:], in: nil, in: .page) { result in
+        guard let world = wkContentWorld(kind: worldKind, name: worldNameString) else {
+            "invalid content world".withCString { cb(nil, $0, ctx) }
+            return
+        }
+        box.webView.callAsyncJavaScript(script, arguments: arguments, in: frame?.frameInfo, in: world) { result in
             switch result {
             case let .success(value):
                 let str: String
@@ -107,17 +121,17 @@ public func wk_webview_take_snapshot_async(
         return
     }
     let box: WKWebViewBox = wkBorrow(ptr)
-    let configuration = wkMakeSnapshotConfiguration(
-        hasRect: hasRect,
-        x: x,
-        y: y,
-        width: width,
-        height: height,
-        hasSnapshotWidth: hasSnapshotWidth,
-        snapshotWidth: snapshotWidth,
-        afterScreenUpdates: afterScreenUpdates
-    )
     DispatchQueue.main.async {
+        let configuration = wkMakeSnapshotConfiguration(
+            hasRect: hasRect,
+            x: x,
+            y: y,
+            width: width,
+            height: height,
+            hasSnapshotWidth: hasSnapshotWidth,
+            snapshotWidth: snapshotWidth,
+            afterScreenUpdates: afterScreenUpdates
+        )
         box.webView.takeSnapshot(with: configuration) { image, error in
             if let error {
                 error.localizedDescription.withCString { cb(nil, 0, $0, ctx) }
@@ -153,15 +167,15 @@ public func wk_webview_create_pdf_async(
         return
     }
     let box: WKWebViewBox = wkBorrow(ptr)
-    let configuration = wkMakePDFConfiguration(
-        hasRect: hasRect,
-        x: x,
-        y: y,
-        width: width,
-        height: height,
-        allowTransparentBackground: allowTransparentBackground
-    )
     DispatchQueue.main.async {
+        let configuration = wkMakePDFConfiguration(
+            hasRect: hasRect,
+            x: x,
+            y: y,
+            width: width,
+            height: height,
+            allowTransparentBackground: allowTransparentBackground
+        )
         box.webView.createPDF(configuration: configuration) { result in
             switch result {
             case let .success(data):
@@ -210,8 +224,9 @@ public func wk_webview_find_string_async(
     }
     let box: WKWebViewBox = wkBorrow(ptr)
     let queryString = String(cString: query)
-    let configuration = wkMakeFindConfiguration(from: configurationJson)
+    let configurationDictionary = wkJSONObject(from: configurationJson) as? [String: Any]
     DispatchQueue.main.async {
+        let configuration = wkMakeFindConfiguration(from: configurationDictionary)
         box.webView.find(queryString, configuration: configuration) { result in
             let payload: [String: Any] = [
                 "matchFound": result.matchFound,

@@ -29,9 +29,7 @@ fn navigation_event_deserializes_typed_action_details() -> Result<(), Box<dyn st
                     "mainFrame":true,
                     "requestUrl":"https://example.test/",
                     "requestMethod":"GET",
-                    "securityOriginProtocol":"https",
-                    "securityOriginHost":"example.test",
-                    "securityOriginPort":443,
+                    "securityOrigin":{"protocol":"https","host":"example.test","port":443},
                     "webviewUrl":"https://example.test/"
                 },
                 "targetFrame":null,
@@ -52,10 +50,9 @@ fn navigation_event_deserializes_typed_action_details() -> Result<(), Box<dyn st
     assert_eq!(action.navigation_type, NavigationType::LinkActivated);
     assert_eq!(action.request_url, "https://example.test/");
     assert!(action.source_frame.main_frame);
-    assert_eq!(
-        action.source_frame.security_origin_host.as_deref(),
-        Some("example.test")
-    );
+    assert_eq!(action.source_frame.security_origin.host, "example.test");
+    assert_eq!(action.source_frame.security_origin.protocol, "https");
+    assert_eq!(action.source_frame.security_origin.port, 443);
     assert_eq!(
         action.request_headers.get("Accept").map(String::as_str),
         Some("text/html")

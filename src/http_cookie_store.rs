@@ -1,12 +1,14 @@
 use core::ffi::c_void;
+use core::fmt;
 use core::ptr;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 
 use crate::error::WebKitError;
+use crate::events::DrainedEvents;
 use crate::ffi;
-use crate::private::{maybe_take_error, take_json_or_default, to_json_cstring};
+use crate::private::{maybe_take_error, take_json_or_default, take_string, to_json_cstring};
 
 /// Wraps `NSHTTPCookie.AcceptPolicy` values.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -36,7 +38,7 @@ impl CookiePolicy {
 }
 
 /// Wraps `NSHTTPCookie`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Cookie {
     /// Mirrors the `name` value exposed by `NSHTTPCookie`.
@@ -55,6 +57,21 @@ pub struct Cookie {
     pub session_only: bool,
     /// Mirrors the `expires` value exposed by `NSHTTPCookie`.
     pub expires: Option<i64>,
+}
+
+impl fmt::Debug for Cookie {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Cookie")
+            .field("name", &self.name)
+            .field("value", &"<redacted>")
+            .field("domain", &self.domain)
+            .field("path", &self.path)
+            .field("secure", &self.secure)
+            .field("http_only", &self.http_only)
+            .field("session_only", &self.session_only)
+            .field("expires", &self.expires)
+            .finish()
+    }
 }
 
 impl Cookie {
@@ -156,7 +173,11 @@ impl HttpCookieStore {
         let mut out_json = ptr::null_mut();
         let mut out_err = ptr::null_mut();
         let status = unsafe {
-            ffi::wk_http_cookie_store_copy_all_cookies_json(self.ptr, &mut out_json, &mut out_err)
+            ffi::wk_http_cookie_store_copy_all_cookies_json(
+                self.ptr,
+                &raw mut out_json,
+                &raw mut out_err,
+            )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);
@@ -169,7 +190,7 @@ impl HttpCookieStore {
         let cookie_json = to_json_cstring(cookie);
         let mut out_err = ptr::null_mut();
         let status = unsafe {
-            ffi::wk_http_cookie_store_set_cookie(self.ptr, cookie_json.as_ptr(), &mut out_err)
+            ffi::wk_http_cookie_store_set_cookie(self.ptr, cookie_json.as_ptr(), &raw mut out_err)
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);
@@ -182,7 +203,7 @@ impl HttpCookieStore {
         let cookies_json = to_json_cstring(cookies);
         let mut out_err = ptr::null_mut();
         let status = unsafe {
-            ffi::wk_http_cookie_store_set_cookies(self.ptr, cookies_json.as_ptr(), &mut out_err)
+            ffi::wk_http_cookie_store_set_cookies(self.ptr, cookies_json.as_ptr(), &raw mut out_err)
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);
@@ -195,7 +216,11 @@ impl HttpCookieStore {
         let cookie_json = to_json_cstring(cookie);
         let mut out_err = ptr::null_mut();
         let status = unsafe {
-            ffi::wk_http_cookie_store_delete_cookie(self.ptr, cookie_json.as_ptr(), &mut out_err)
+            ffi::wk_http_cookie_store_delete_cookie(
+                self.ptr,
+                cookie_json.as_ptr(),
+                &raw mut out_err,
+            )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);
@@ -215,15 +240,17 @@ impl HttpCookieStore {
 
     /// Returns the corresponding value from `WKHTTPCookieStore`.
     #[must_use]
-    pub fn drain_events(&self) -> Vec<CookieStoreEvent> {
-        unsafe { take_json_or_default(ffi::wk_http_cookie_store_drain_events_json(self.ptr)) }
+    pub fn drain_events(&self) -> DrainedEvents<CookieStoreEvent> {
+        DrainedEvents::from_json(&unsafe {
+            take_string(ffi::wk_http_cookie_store_drain_events_json(self.ptr))
+        })
     }
 
     /// Sets the corresponding value on `WKHTTPCookieStore`.
     pub fn set_cookie_policy(&self, policy: CookiePolicy) -> Result<(), WebKitError> {
         let mut out_err = ptr::null_mut();
         let status = unsafe {
-            ffi::wk_http_cookie_store_set_cookie_policy(self.ptr, policy.as_raw(), &mut out_err)
+            ffi::wk_http_cookie_store_set_cookie_policy(self.ptr, policy.as_raw(), &raw mut out_err)
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);
@@ -236,7 +263,11 @@ impl HttpCookieStore {
         let mut out_policy = 0;
         let mut out_err = ptr::null_mut();
         let status = unsafe {
-            ffi::wk_http_cookie_store_get_cookie_policy(self.ptr, &mut out_policy, &mut out_err)
+            ffi::wk_http_cookie_store_get_cookie_policy(
+                self.ptr,
+                &raw mut out_policy,
+                &raw mut out_err,
+            )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);
@@ -250,3 +281,19 @@ crate::utils::retained::wk_retained!(
     field = ptr,
     release = ffi::wk_http_cookie_store_release,
 );
+
+#[cfg(test)]
+mod tests {
+    use super::Cookie;
+
+    #[test]
+    fn cookie_debug_redacts_the_value() {
+        let cookie = Cookie::new("session", "s3cr3t-token", "example.test").with_secure(true);
+        let debug = format!("{cookie:?}");
+        assert!(!debug.contains("s3cr3t-token"));
+        assert!(debug.contains("<redacted>"));
+        assert!(debug.contains("session"));
+        assert!(debug.contains("example.test"));
+        assert_eq!(cookie.value, "s3cr3t-token");
+    }
+}

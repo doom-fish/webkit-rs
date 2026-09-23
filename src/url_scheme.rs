@@ -1,14 +1,14 @@
 use core::ffi::{c_char, c_void, CStr};
 use core::ptr;
 use std::collections::BTreeMap;
-use std::sync::Arc;
 
+use doom_fish_utils::callback_context::CallbackContext;
 use serde::{Deserialize, Serialize};
 
 use crate::config::WebViewConfiguration;
 use crate::error::WebKitError;
 use crate::ffi::{self, WKURLSchemeTaskCallback};
-use crate::private::{maybe_take_error, to_cstring, to_json_cstring};
+use crate::private::{maybe_take_error, take_bytes, to_cstring, to_json_cstring};
 
 /// Request metadata for a `WKURLSchemeTask`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -21,6 +21,9 @@ pub struct UrlSchemeRequest {
     /// Mirrors the `headers` value exposed by `WKURLSchemeTask`.
     #[serde(default)]
     pub headers: BTreeMap<String, String>,
+    #[allow(missing_docs)]
+    #[serde(skip)]
+    pub body: Option<Vec<u8>>,
 }
 
 /// Response metadata sent back to a `WKURLSchemeTask`.
@@ -92,12 +95,19 @@ impl UrlSchemeTask {
             return None;
         }
 
-        let request = if request_json.is_null() {
+        let mut request = if request_json.is_null() {
             UrlSchemeRequest::default()
         } else {
             let json = unsafe { CStr::from_ptr(request_json) }.to_string_lossy();
             serde_json::from_str(&json).unwrap_or_default()
         };
+        let mut body_ptr = ptr::null_mut();
+        let mut body_len = 0;
+        if unsafe {
+            ffi::wk_url_scheme_task_copy_request_body(ptr, &raw mut body_ptr, &raw mut body_len)
+        } {
+            request.body = Some(unsafe { take_bytes(body_ptr, body_len) });
+        }
 
         Some(Self { ptr, request })
     }
@@ -116,7 +126,7 @@ impl UrlSchemeTask {
             ffi::wk_url_scheme_task_send_response_json(
                 self.ptr,
                 response_json.as_ptr(),
-                &mut out_err,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -129,7 +139,7 @@ impl UrlSchemeTask {
     pub fn did_receive_data(&self, data: &[u8]) -> Result<(), WebKitError> {
         let mut out_err = ptr::null_mut();
         let status = unsafe {
-            ffi::wk_url_scheme_task_send_data(self.ptr, data.as_ptr(), data.len(), &mut out_err)
+            ffi::wk_url_scheme_task_send_data(self.ptr, data.as_ptr(), data.len(), &raw mut out_err)
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);
@@ -140,7 +150,7 @@ impl UrlSchemeTask {
     /// Calls the corresponding `WKURLSchemeTask` API.
     pub fn did_finish(&self) -> Result<(), WebKitError> {
         let mut out_err = ptr::null_mut();
-        let status = unsafe { ffi::wk_url_scheme_task_finish(self.ptr, &mut out_err) };
+        let status = unsafe { ffi::wk_url_scheme_task_finish(self.ptr, &raw mut out_err) };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);
         }
@@ -152,7 +162,7 @@ impl UrlSchemeTask {
         let c_message = to_cstring(message);
         let mut out_err = ptr::null_mut();
         let status =
-            unsafe { ffi::wk_url_scheme_task_fail(self.ptr, c_message.as_ptr(), &mut out_err) };
+            unsafe { ffi::wk_url_scheme_task_fail(self.ptr, c_message.as_ptr(), &raw mut out_err) };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);
         }
@@ -183,73 +193,36 @@ pub trait UrlSchemeHandler: Send + Sync + 'static {
     fn stop(&self, task: UrlSchemeTask);
 }
 
-struct UrlSchemeHandlerHolder {
-    handler: Box<dyn UrlSchemeHandler>,
-}
+type UrlSchemeHandlerContext = CallbackContext<Box<dyn UrlSchemeHandler>>;
 
-// SAFETY: Called by the Swift bridge when a URL scheme task starts.
-// `user_info` is the `Arc<UrlSchemeHandlerHolder>` raw pointer stored in the
-// configuration; we reconstitute a clone without consuming the original so the
-// bridge retains ownership. `task` and `request_json` are bridge-owned and
-// valid for the duration of this call.
 unsafe extern "C" fn url_scheme_start_trampoline(
     user_info: *mut c_void,
     task: *mut c_void,
     request_json: *const c_char,
 ) {
-    if user_info.is_null() || task.is_null() {
+    let Some(task) = UrlSchemeTask::from_ptr_and_json(task, request_json) else {
         return;
-    }
-
-    // SAFETY: `user_info` is the raw pointer from `Arc::into_raw`; we clone
-    // before putting it back to avoid consuming the bridge's reference.
-    let holder = unsafe { Arc::<UrlSchemeHandlerHolder>::from_raw(user_info.cast()) };
-    let cloned = Arc::clone(&holder);
-    let _ = Arc::into_raw(holder);
-    if let Some(task) = UrlSchemeTask::from_ptr_and_json(task, request_json) {
-        // Catch panics from user-supplied handler to prevent UB across C ABI.
-        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            cloned.handler.start(task);
-        }));
-    }
+    };
+    let _ = unsafe {
+        UrlSchemeHandlerContext::with(user_info, "UrlSchemeHandler::start", move |handler| {
+            handler.start(task);
+        })
+    };
 }
 
-// SAFETY: Called by the Swift bridge when a URL scheme task is stopped.
-// Same pointer ownership invariants as `url_scheme_start_trampoline`.
 unsafe extern "C" fn url_scheme_stop_trampoline(
     user_info: *mut c_void,
     task: *mut c_void,
     request_json: *const c_char,
 ) {
-    if user_info.is_null() || task.is_null() {
+    let Some(task) = UrlSchemeTask::from_ptr_and_json(task, request_json) else {
         return;
-    }
-
-    // SAFETY: `user_info` is the raw pointer from `Arc::into_raw`; we clone
-    // before putting it back to avoid consuming the bridge's reference.
-    let holder = unsafe { Arc::<UrlSchemeHandlerHolder>::from_raw(user_info.cast()) };
-    let cloned = Arc::clone(&holder);
-    let _ = Arc::into_raw(holder);
-    if let Some(task) = UrlSchemeTask::from_ptr_and_json(task, request_json) {
-        // Catch panics from user-supplied handler to prevent UB across C ABI.
-        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            cloned.handler.stop(task);
-        }));
-    }
-}
-
-/// Called by the Swift bridge when a registered URL scheme handler is released.
-#[no_mangle]
-pub extern "C" fn wk_rust_release_url_scheme_handler(user_info: *mut c_void) {
-    if user_info.is_null() {
-        return;
-    }
-    // SAFETY: `user_info` is the raw pointer from `Arc::into_raw` stored in the
-    // Swift bridge configuration object. This function is called exactly once,
-    // when the bridge releases the handler, so we take ownership and drop it.
-    unsafe {
-        drop(Arc::<UrlSchemeHandlerHolder>::from_raw(user_info.cast()));
-    }
+    };
+    let _ = unsafe {
+        UrlSchemeHandlerContext::with(user_info, "UrlSchemeHandler::stop", move |handler| {
+            handler.stop(task);
+        })
+    };
 }
 
 impl WebViewConfiguration {
@@ -262,11 +235,7 @@ impl WebViewConfiguration {
         H: UrlSchemeHandler,
     {
         let c_scheme = to_cstring(scheme);
-        let holder = Arc::new(UrlSchemeHandlerHolder {
-            handler: Box::new(handler),
-        });
-        let user_info = Arc::into_raw(holder).cast_mut().cast::<c_void>();
-
+        let context = UrlSchemeHandlerContext::new(Box::new(handler));
         let mut out_err = ptr::null_mut();
         let status = unsafe {
             ffi::wk_config_set_url_scheme_handler(
@@ -274,14 +243,15 @@ impl WebViewConfiguration {
                 c_scheme.as_ptr(),
                 Some(url_scheme_start_trampoline as WKURLSchemeTaskCallback),
                 Some(url_scheme_stop_trampoline as WKURLSchemeTaskCallback),
-                user_info,
-                &mut out_err,
+                context.as_ptr(),
+                Some(UrlSchemeHandlerContext::RELEASE),
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
-            wk_rust_release_url_scheme_handler(user_info);
             return Err(error);
         }
+        std::mem::forget(context);
         Ok(())
     }
 }

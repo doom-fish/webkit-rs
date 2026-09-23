@@ -24,7 +24,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!(
         "cookie observer events: {}",
-        cookie_store.drain_events().len()
+        cookie_store.drain_events().events.len()
     );
     Ok(())
 }

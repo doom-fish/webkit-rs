@@ -42,7 +42,7 @@ private func wkURLProperty(
 @_cdecl("wk_context_menu_element_info_release")
 public func wk_context_menu_element_info_release(_ ptr: UnsafeMutableRawPointer?) {
     guard let ptr else { return }
-    wkRelease(ptr)
+    wkReleaseOnMain(ptr)
 }
 
 @_cdecl("wk_context_menu_element_info_copy_link_url")
@@ -53,7 +53,7 @@ public func wk_context_menu_element_info_copy_link_url(_ ptr: UnsafeMutableRawPo
 @_cdecl("wk_preview_element_info_release")
 public func wk_preview_element_info_release(_ ptr: UnsafeMutableRawPointer?) {
     guard let ptr else { return }
-    wkRelease(ptr)
+    wkReleaseOnMain(ptr)
 }
 
 @_cdecl("wk_preview_element_info_copy_link_url")
@@ -64,7 +64,7 @@ public func wk_preview_element_info_copy_link_url(_ ptr: UnsafeMutableRawPointer
 @_cdecl("wk_preview_action_item_release")
 public func wk_preview_action_item_release(_ ptr: UnsafeMutableRawPointer?) {
     guard let ptr else { return }
-    wkRelease(ptr)
+    wkReleaseOnMain(ptr)
 }
 
 @_cdecl("wk_preview_action_item_copy_identifier")

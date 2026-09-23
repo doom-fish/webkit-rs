@@ -32,14 +32,14 @@ private func wkMakeCookie(from dictionary: [String: Any]) -> HTTPCookie? {
 }
 
 final class WKRustCookieStoreObserver: NSObject, WKHTTPCookieStoreObserver {
-    var events: [[String: Any]] = []
+    let events = WKRustEventQueue()
 
     func cookiesDidChange(in cookieStore: WKHTTPCookieStore) {
         events.append(["kind": "cookiesDidChange"])
     }
 
     func drainEvents() -> UnsafeMutablePointer<CChar>? {
-        wkDrainEvents(&events)
+        events.drain()
     }
 }
 
@@ -79,7 +79,7 @@ final class WKHTTPCookieStoreBox: NSObject {
 @_cdecl("wk_http_cookie_store_release")
 public func wk_http_cookie_store_release(_ ptr: UnsafeMutableRawPointer?) {
     guard let ptr else { return }
-    wkRelease(ptr)
+    wkReleaseOnMain(ptr)
 }
 
 @_cdecl("wk_http_cookie_store_copy_all_cookies_json")
@@ -201,14 +201,16 @@ public func wk_http_cookie_store_delete_cookie(
 public func wk_http_cookie_store_set_observing(_ ptr: UnsafeMutableRawPointer?, _ observing: Bool) {
     guard let ptr else { return }
     let box: WKHTTPCookieStoreBox = wkBorrow(ptr)
-    box.setObserving(observing)
+    wkOnMain {
+        box.setObserving(observing)
+    }
 }
 
 @_cdecl("wk_http_cookie_store_drain_events_json")
 public func wk_http_cookie_store_drain_events_json(_ ptr: UnsafeMutableRawPointer?) -> UnsafeMutablePointer<CChar>? {
-    guard let ptr else { return wkCString("[]") }
+    guard let ptr else { return WKRustEventQueue().drain() }
     let box: WKHTTPCookieStoreBox = wkBorrow(ptr)
-    return box.drainEvents()
+    return wkOnMain { box.drainEvents() }
 }
 
 @_cdecl("wk_http_cookie_store_set_cookie_policy")

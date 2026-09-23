@@ -40,8 +40,15 @@ mod async_tests {
     #[ignore = "Async WKWebView smoke tests must run on the process main thread; examples cover live validation"]
     fn test_call_async_javascript() {
         let view = make_view();
-        let result = pollster::block_on(AsyncWebView::call_async_javascript(&view, "return 1 + 2"))
-            .expect("call_async_javascript failed");
+        let future = AsyncWebView::call_async_javascript(
+            &view,
+            "return a + b",
+            &serde_json::json!({"a": 1, "b": 2}),
+            None,
+            &webkit::ContentWorld::Page,
+        )
+        .expect("arguments are a JSON object");
+        let result = pollster::block_on(future).expect("call_async_javascript failed");
         assert_eq!(result.trim(), "3");
     }
 

@@ -8,13 +8,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let config = WebViewConfiguration::new();
     config.use_nonpersistent_data_store();
-    config.add_message_handler("smokeTest");
+    config.add_message_handler("smokeTest", &ContentWorld::Page)?;
 
     let mut view = WebView::with_config(&config)?;
 
     let (tx, rx) = mpsc::channel::<String>();
-    view.set_message_handler(move |_name, body| {
-        let _ = tx.send(body.to_owned());
+    view.set_message_handler(move |message| {
+        let _ = tx.send(message.body.clone());
     });
 
     view.set_navigation_handler(|event| {

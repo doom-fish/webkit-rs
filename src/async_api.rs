@@ -51,14 +51,17 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use doom_fish_utils::completion::{error_from_cstr, AsyncCompletion, AsyncCompletionFuture};
+use serde::Serialize;
 
 use crate::content_rule_list_store::{ContentRuleList, ContentRuleListStore};
+use crate::content_world::ContentWorld;
 use crate::download::Download;
 use crate::error::WebKitError;
 use crate::find::FindConfiguration;
+use crate::frame::FrameHandle;
 use crate::http_cookie_store::HttpCookieStore;
 use crate::pdf_configuration::PDFConfiguration;
-use crate::private::{to_cstring, to_json_cstring};
+use crate::private::{javascript_arguments_json, to_cstring, to_json_cstring};
 use crate::snapshot_configuration::SnapshotConfiguration;
 use crate::website_data_store::{WebsiteDataRecord, WebsiteDataStore, WebsiteDataType};
 use crate::webview::WebView;
@@ -349,18 +352,37 @@ impl AsyncWebView {
     }
 
     /// Call async JavaScript and return the result as a string.
-    pub fn call_async_javascript(view: &WebView, js: &str) -> CallAsyncJavaScriptFuture {
-        let c_js = to_cstring(js);
+    pub fn call_async_javascript<A>(
+        view: &WebView,
+        function_body: &str,
+        arguments: &A,
+        frame: Option<&FrameHandle>,
+        content_world: &ContentWorld,
+    ) -> Result<CallAsyncJavaScriptFuture, WebKitError>
+    where
+        A: Serialize + ?Sized,
+    {
+        let arguments_json = javascript_arguments_json(arguments)?;
+        let c_body = to_cstring(function_body);
+        let (world_kind, world_name) = content_world.to_ffi();
+        let world_name_ptr = world_name
+            .as_ref()
+            .map_or(core::ptr::null(), |name| name.as_ptr());
+        let frame_ptr = frame.map_or(core::ptr::null_mut(), FrameHandle::as_ptr);
         let (future, ctx) = AsyncCompletion::create();
         unsafe {
             crate::ffi::wk_webview_call_async_js_async(
                 view.as_ptr(),
-                c_js.as_ptr(),
+                c_body.as_ptr(),
+                arguments_json.as_ptr(),
+                frame_ptr,
+                world_kind,
+                world_name_ptr,
                 string_cb,
                 ctx,
             );
         }
-        CallAsyncJavaScriptFuture { inner: future }
+        Ok(CallAsyncJavaScriptFuture { inner: future })
     }
 
     /// Take a PNG snapshot of the web view.

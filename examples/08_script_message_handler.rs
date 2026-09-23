@@ -7,11 +7,11 @@ use webkit::prelude::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = common::base_config();
-    config.add_message_handler("bridge");
+    config.add_message_handler("bridge", &ContentWorld::Page)?;
     let mut view = WebView::with_config(&config)?;
     let (tx, rx) = mpsc::channel();
-    view.set_message_handler(move |name, body| {
-        let _ = tx.send((name.to_owned(), body.to_owned()));
+    view.set_message_handler(move |message| {
+        let _ = tx.send((message.name.clone(), message.body.clone()));
     });
 
     common::load_html(

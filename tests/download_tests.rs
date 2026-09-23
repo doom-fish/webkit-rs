@@ -44,7 +44,7 @@ fn download_finishes_against_local_attachment_server() -> Result<(), Box<dyn std
     let deadline = Instant::now() + Duration::from_secs(5);
     let mut finished = false;
     while Instant::now() < deadline {
-        for event in download.drain_events() {
+        for event in download.drain_events().events {
             if event.kind == "finish" {
                 finished = true;
                 break;

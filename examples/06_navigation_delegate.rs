@@ -15,7 +15,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "<p>navigation delegate</p>",
         "https://nav-delegate.test/",
     )?;
-    let events = view.drain_navigation_events();
+    let events = view.drain_navigation_events().events;
     assert!(events
         .iter()
         .any(|event| matches!(event.kind, NavigationEventKind::DidFinish)));

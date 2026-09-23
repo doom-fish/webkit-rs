@@ -110,8 +110,8 @@ impl ContentRuleListStore {
                 self.ptr,
                 c_identifier.as_ptr(),
                 c_rule_list.as_ptr(),
-                &mut out_rule_list,
-                &mut out_err,
+                &raw mut out_rule_list,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -131,8 +131,8 @@ impl ContentRuleListStore {
             ffi::wk_content_rule_list_store_lookup(
                 self.ptr,
                 c_identifier.as_ptr(),
-                &mut out_rule_list,
-                &mut out_err,
+                &raw mut out_rule_list,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -146,7 +146,11 @@ impl ContentRuleListStore {
         let c_identifier = to_cstring(identifier);
         let mut out_err = ptr::null_mut();
         let status = unsafe {
-            ffi::wk_content_rule_list_store_remove(self.ptr, c_identifier.as_ptr(), &mut out_err)
+            ffi::wk_content_rule_list_store_remove(
+                self.ptr,
+                c_identifier.as_ptr(),
+                &raw mut out_err,
+            )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);
@@ -161,8 +165,8 @@ impl ContentRuleListStore {
         let status = unsafe {
             ffi::wk_content_rule_list_store_copy_available_identifiers_json(
                 self.ptr,
-                &mut out_json,
-                &mut out_err,
+                &raw mut out_json,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {

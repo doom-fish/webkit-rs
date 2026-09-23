@@ -16,7 +16,7 @@ fn webview_extra_surfaces_are_available() {
     );
     assert_eq!(FullscreenState::from_raw(2), FullscreenState::InFullscreen);
 
-    let _: fn(&WebView) -> Vec<UIDelegateEventDetail> = WebView::drain_ui_event_details;
+    let _: fn(&WebView) -> DrainedEvents<UIDelegateEventDetail> = WebView::drain_ui_event_details;
     let _: fn(&WebView) -> Result<MediaPlaybackState, WebKitError> =
         WebView::request_media_playback_state;
     let _: fn(&WebView) -> MediaCaptureState = WebView::camera_capture_state;

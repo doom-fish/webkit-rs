@@ -18,15 +18,21 @@ pub mod back_forward_list;
 pub mod config;
 /// Rust bindings for `WKContentRuleListStore`.
 pub mod content_rule_list_store;
+#[allow(missing_docs)]
+pub mod content_world;
 /// Rust bindings for WebKit context-menu and preview metadata types.
 pub mod context_menu;
 /// Rust bindings for `WKDownload`.
 pub mod download;
 /// Rust bindings for `WKErrorDomain`.
 pub mod error;
+#[allow(missing_docs)]
+pub mod events;
 pub mod ffi;
 /// Rust bindings for `WKFindConfiguration`.
 pub mod find;
+#[allow(missing_docs)]
+pub mod frame;
 /// Rust bindings for `CGRect`.
 pub mod geometry;
 /// Rust bindings for `WKHTTPCookieStore`.
@@ -76,10 +82,13 @@ pub use attributed_string::{
 pub use back_forward_list::{BackForwardList, BackForwardListItem};
 pub use config::{AudiovisualMediaTypes, UserInterfaceDirectionPolicy, WebViewConfiguration};
 pub use content_rule_list_store::{ContentRuleList, ContentRuleListStore};
+pub use content_world::ContentWorld;
 pub use context_menu::{ContextMenuElementInfo, PreviewActionItem, PreviewElementInfo};
 pub use download::{Download, DownloadEvent, DownloadRedirectPolicy};
 pub use error::{WebKitError, WebKitErrorCode, WEBKIT_ERROR_DOMAIN};
+pub use events::DrainedEvents;
 pub use find::{FindConfiguration, FindResult, TextFinderAction};
+pub use frame::FrameHandle;
 pub use geometry::Rect;
 pub use http_cookie_store::{Cookie, CookiePolicy, CookieStoreEvent, HttpCookieStore};
 pub use navigation::Navigation;
@@ -138,10 +147,13 @@ pub mod prelude {
         AudiovisualMediaTypes, UserInterfaceDirectionPolicy, WebViewConfiguration,
     };
     pub use crate::content_rule_list_store::{ContentRuleList, ContentRuleListStore};
+    pub use crate::content_world::ContentWorld;
     pub use crate::context_menu::{ContextMenuElementInfo, PreviewActionItem, PreviewElementInfo};
     pub use crate::download::{Download, DownloadEvent, DownloadRedirectPolicy};
     pub use crate::error::{WebKitError, WebKitErrorCode, WEBKIT_ERROR_DOMAIN};
+    pub use crate::events::DrainedEvents;
     pub use crate::find::{FindConfiguration, FindResult, TextFinderAction};
+    pub use crate::frame::FrameHandle;
     pub use crate::geometry::Rect;
     pub use crate::http_cookie_store::{Cookie, CookiePolicy, CookieStoreEvent, HttpCookieStore};
     pub use crate::navigation::Navigation;

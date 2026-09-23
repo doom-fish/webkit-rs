@@ -501,6 +501,12 @@ pub enum WebExtensionWindowState {
     Fullscreen = 3,
 }
 
+fn web_extensions_unavailable(operation: &str) -> WebKitError {
+    WebKitError::Unsupported(format!(
+        "{operation} failed: web extensions require macOS 15.4 or later"
+    ))
+}
+
 fn unsupported_web_extension_delegate_method(method: &str) -> WebKitError {
     WebKitError::Unsupported(format!(
         "web extension delegate method `{method}` is not implemented"
@@ -1274,8 +1280,8 @@ impl WebExtension {
         let status = unsafe {
             ffi::wk_web_extension_create_with_resource_base_url(
                 path.as_ptr(),
-                &mut out_extension,
-                &mut out_err,
+                &raw mut out_extension,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -1296,8 +1302,8 @@ impl WebExtension {
         let status = unsafe {
             ffi::wk_web_extension_create_with_app_extension_bundle(
                 path.as_ptr(),
-                &mut out_extension,
-                &mut out_err,
+                &raw mut out_extension,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -1359,7 +1365,7 @@ impl WebExtensionMatchPattern {
         let status = unsafe {
             ffi::wk_web_extension_match_pattern_register_custom_url_scheme(
                 scheme.as_ptr(),
-                &mut out_err,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -1369,17 +1375,17 @@ impl WebExtensionMatchPattern {
     }
 
     /// Returns the corresponding value from `WKWebExtensionMatchPattern`.
-    #[must_use]
-    pub fn all_urls() -> Self {
+    pub fn all_urls() -> Result<Self, WebKitError> {
         Self::from_ptr(unsafe { ffi::wk_web_extension_match_pattern_all_urls() })
-            .expect("wk_web_extension_match_pattern_all_urls returned null")
+            .ok_or_else(|| web_extensions_unavailable("WKWebExtensionMatchPattern.allURLs"))
     }
 
     /// Returns the corresponding value from `WKWebExtensionMatchPattern`.
-    #[must_use]
-    pub fn all_hosts_and_schemes() -> Self {
+    pub fn all_hosts_and_schemes() -> Result<Self, WebKitError> {
         Self::from_ptr(unsafe { ffi::wk_web_extension_match_pattern_all_hosts_and_schemes() })
-            .expect("wk_web_extension_match_pattern_all_hosts_and_schemes returned null")
+            .ok_or_else(|| {
+                web_extensions_unavailable("WKWebExtensionMatchPattern.allHostsAndSchemes")
+            })
     }
 
     /// Creates a value for `WKWebExtensionMatchPattern`.
@@ -1390,8 +1396,8 @@ impl WebExtensionMatchPattern {
         let status = unsafe {
             ffi::wk_web_extension_match_pattern_with_string(
                 pattern.as_ptr(),
-                &mut out_pattern,
-                &mut out_err,
+                &raw mut out_pattern,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -1416,8 +1422,8 @@ impl WebExtensionMatchPattern {
                 scheme.as_ptr(),
                 host.as_ptr(),
                 path.as_ptr(),
-                &mut out_pattern,
-                &mut out_err,
+                &raw mut out_pattern,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -1512,17 +1518,19 @@ impl WebExtensionControllerConfiguration {
     }
 
     /// Creates a value for `WKWebExtensionController.Configuration`.
-    #[must_use]
-    pub fn default_configuration() -> Self {
+    pub fn default_configuration() -> Result<Self, WebKitError> {
         Self::from_ptr(unsafe { ffi::wk_web_extension_controller_configuration_default() })
-            .expect("wk_web_extension_controller_configuration_default returned null")
+            .ok_or_else(|| {
+                web_extensions_unavailable("WKWebExtensionController.Configuration.default")
+            })
     }
 
     /// Mirrors the corresponding `WKWebExtensionController.Configuration` API.
-    #[must_use]
-    pub fn non_persistent_configuration() -> Self {
+    pub fn non_persistent_configuration() -> Result<Self, WebKitError> {
         Self::from_ptr(unsafe { ffi::wk_web_extension_controller_configuration_nonpersistent() })
-            .expect("wk_web_extension_controller_configuration_nonpersistent returned null")
+            .ok_or_else(|| {
+                web_extensions_unavailable("WKWebExtensionController.Configuration.nonPersistent")
+            })
     }
 
     /// Mirrors the corresponding `WKWebExtensionController.Configuration` API.
@@ -1533,8 +1541,8 @@ impl WebExtensionControllerConfiguration {
         let status = unsafe {
             ffi::wk_web_extension_controller_configuration_with_identifier(
                 identifier.as_ptr(),
-                &mut out_configuration,
-                &mut out_err,
+                &raw mut out_configuration,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -1621,12 +1629,6 @@ unsafe impl Send for WebExtensionController {}
 // SAFETY: The Swift bridge serialises all WebKit interactions onto the main thread.
 unsafe impl Sync for WebExtensionController {}
 
-impl Default for WebExtensionController {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl WebExtensionController {
     fn from_ptr(ptr: *mut c_void) -> Option<Self> {
         if ptr.is_null() {
@@ -1637,19 +1639,19 @@ impl WebExtensionController {
     }
 
     /// Creates a value for `WKWebExtensionController`.
-    #[must_use]
-    pub fn new() -> Self {
+    pub fn new() -> Result<Self, WebKitError> {
         Self::from_ptr(unsafe { ffi::wk_web_extension_controller_new() })
-            .expect("wk_web_extension_controller_new returned null")
+            .ok_or_else(|| web_extensions_unavailable("WKWebExtensionController.init"))
     }
 
     /// Sets the corresponding option used by `WKWebExtensionController`.
-    #[must_use]
-    pub fn with_configuration(configuration: &WebExtensionControllerConfiguration) -> Self {
+    pub fn with_configuration(
+        configuration: &WebExtensionControllerConfiguration,
+    ) -> Result<Self, WebKitError> {
         Self::from_ptr(unsafe {
             ffi::wk_web_extension_controller_with_configuration(configuration.as_ptr())
         })
-        .expect("wk_web_extension_controller_with_configuration returned null")
+        .ok_or_else(|| web_extensions_unavailable("WKWebExtensionController.init(configuration:)"))
     }
 
     /// Mirrors the corresponding `WKWebExtensionController` API.
@@ -1664,7 +1666,7 @@ impl WebExtensionController {
     pub fn load(&self, context: &WebExtensionContext) -> Result<(), WebKitError> {
         let mut out_err = ptr::null_mut();
         let status = unsafe {
-            ffi::wk_web_extension_controller_load_context(self.ptr, context.ptr, &mut out_err)
+            ffi::wk_web_extension_controller_load_context(self.ptr, context.ptr, &raw mut out_err)
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);
@@ -1676,7 +1678,7 @@ impl WebExtensionController {
     pub fn unload(&self, context: &WebExtensionContext) -> Result<(), WebKitError> {
         let mut out_err = ptr::null_mut();
         let status = unsafe {
-            ffi::wk_web_extension_controller_unload_context(self.ptr, context.ptr, &mut out_err)
+            ffi::wk_web_extension_controller_unload_context(self.ptr, context.ptr, &raw mut out_err)
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);
@@ -1722,8 +1724,8 @@ impl WebExtensionController {
             ffi::wk_web_extension_controller_copy_data_records_json(
                 self.ptr,
                 data_types_json.as_ptr(),
-                &mut out_json,
-                &mut out_err,
+                &raw mut out_json,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -1746,8 +1748,8 @@ impl WebExtensionController {
                 self.ptr,
                 data_types_json.as_ptr(),
                 context.ptr,
-                &mut out_json,
-                &mut out_err,
+                &raw mut out_json,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -1774,7 +1776,7 @@ impl WebExtensionController {
                 self.ptr,
                 data_types_json.as_ptr(),
                 identifiers_json.as_ptr(),
-                &mut out_err,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -1810,10 +1812,9 @@ impl WebExtensionContext {
     }
 
     /// Mirrors the corresponding `WKWebExtensionContext` API.
-    #[must_use]
-    pub fn for_extension(extension: &WebExtension) -> Self {
+    pub fn for_extension(extension: &WebExtension) -> Result<Self, WebKitError> {
         Self::from_ptr(unsafe { ffi::wk_web_extension_context_new_for_extension(extension.ptr) })
-            .expect("wk_web_extension_context_new_for_extension returned null")
+            .ok_or_else(|| web_extensions_unavailable("WKWebExtensionContext.init(for:)"))
     }
 
     /// Returns the corresponding value from `WKWebExtensionContext`.
@@ -1827,7 +1828,7 @@ impl WebExtensionContext {
         let url = to_cstring(url);
         let mut out_err = ptr::null_mut();
         let status = unsafe {
-            ffi::wk_web_extension_context_set_base_url(self.ptr, url.as_ptr(), &mut out_err)
+            ffi::wk_web_extension_context_set_base_url(self.ptr, url.as_ptr(), &raw mut out_err)
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);
@@ -1843,7 +1844,7 @@ impl WebExtensionContext {
             ffi::wk_web_extension_context_set_unique_identifier(
                 self.ptr,
                 identifier.as_ptr(),
-                &mut out_err,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -1944,7 +1945,7 @@ impl WebExtensionContext {
                 self.ptr,
                 status as i64,
                 permission.as_ptr(),
-                &mut out_err,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status_code, out_err) } {
@@ -1983,7 +1984,7 @@ impl WebExtensionContext {
                 self.ptr,
                 status as i64,
                 url.as_ptr(),
-                &mut out_err,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status_code, out_err) } {
@@ -2023,7 +2024,7 @@ impl WebExtensionContext {
                 self.ptr,
                 status as i64,
                 pattern.ptr,
-                &mut out_err,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status_code, out_err) } {
@@ -2036,7 +2037,7 @@ impl WebExtensionContext {
     pub fn load_background_content(&self) -> Result<(), WebKitError> {
         let mut out_err = ptr::null_mut();
         let status = unsafe {
-            ffi::wk_web_extension_context_load_background_content(self.ptr, &mut out_err)
+            ffi::wk_web_extension_context_load_background_content(self.ptr, &raw mut out_err)
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);
@@ -2073,7 +2074,7 @@ impl WebExtensionContext {
             ffi::wk_web_extension_context_perform_command_for_identifier(
                 self.ptr,
                 identifier.as_ptr(),
-                &mut out_err,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -2129,7 +2130,7 @@ impl WebExtensionMessagePort {
             ffi::wk_web_extension_message_port_send_message_json(
                 self.ptr,
                 message_json.as_ptr(),
-                &mut out_err,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {

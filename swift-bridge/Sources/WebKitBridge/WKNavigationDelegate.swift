@@ -6,6 +6,11 @@ public typealias WKNavCallback = @convention(c) (
     UnsafePointer<CChar>?
 ) -> Void
 
+public typealias WKNavDecisionCallback = @convention(c) (
+    UnsafeMutableRawPointer?,
+    UnsafePointer<CChar>?
+) -> Int32
+
 enum WKRustNavigationActionPolicy: Int32 {
     case cancel = 0
     case allow = 1
@@ -21,11 +26,6 @@ enum WKRustNavigationResponsePolicy: Int32 {
 enum WKRustBackForwardListNavigationPolicy: Int32 {
     case cancel = 0
     case allow = 1
-}
-
-private func wkEmitNavCallback(_ callback: WKNavCallback?, _ userInfo: UnsafeMutableRawPointer?, _ payload: [String: Any]) {
-    let json = wkJSONString(payload)
-    json.withCString { callback?(userInfo, $0) }
 }
 
 private func wkHeaderDictionary(_ headers: [AnyHashable: Any]) -> [String: String] {
@@ -53,27 +53,6 @@ private func wkNavigationTypeString(_ navigationType: WKNavigationType) -> Strin
     @unknown default:
         return "other"
     }
-}
-
-private func wkFrameInfoDictionary(_ frameInfo: WKFrameInfo) -> [String: Any] {
-    var dictionary: [String: Any] = [
-        "mainFrame": frameInfo.isMainFrame,
-        "requestUrl": frameInfo.request.url?.absoluteString ?? "",
-        "requestMethod": frameInfo.request.httpMethod ?? "GET",
-        "securityOriginProtocol": NSNull(),
-        "securityOriginHost": NSNull(),
-        "securityOriginPort": NSNull(),
-        "webviewUrl": NSNull()
-    ]
-    if #available(macOS 10.11, *) {
-        dictionary["securityOriginProtocol"] = frameInfo.securityOrigin.`protocol`
-        dictionary["securityOriginHost"] = frameInfo.securityOrigin.host
-        dictionary["securityOriginPort"] = frameInfo.securityOrigin.port
-    }
-    if #available(macOS 10.13, *) {
-        dictionary["webviewUrl"] = frameInfo.webView?.url?.absoluteString ?? NSNull()
-    }
-    return dictionary
 }
 
 private func wkNavigationActionDictionary(_ navigationAction: WKNavigationAction) -> [String: Any] {
@@ -161,8 +140,8 @@ private func wkNavigationEvent(
     error: String? = nil,
     navigationType: Int? = nil,
     statusCode: Int? = nil,
-    navigationAction: WKNavigationAction? = nil,
-    navigationResponse: WKNavigationResponse? = nil
+    navigationAction: [String: Any]? = nil,
+    navigationResponse: [String: Any]? = nil
 ) -> [String: Any] {
     [
         "kind": kind,
@@ -170,41 +149,43 @@ private func wkNavigationEvent(
         "error": error ?? NSNull(),
         "navigationType": navigationType ?? NSNull(),
         "statusCode": statusCode ?? NSNull(),
-        "navigationAction": navigationAction.map(wkNavigationActionDictionary) ?? NSNull(),
-        "navigationResponse": navigationResponse.map(wkNavigationResponseDictionary) ?? NSNull()
+        "navigationAction": navigationAction ?? NSNull(),
+        "navigationResponse": navigationResponse ?? NSNull()
     ]
 }
 
 final class WKRustNavDelegate: NSObject, WKNavigationDelegate {
     weak var owner: WKWebViewBox?
-    var callback: WKNavCallback?
-    var userInfo: UnsafeMutableRawPointer?
-    var backForwardListCallback: WKNavCallback?
-    var backForwardListUserInfo: UnsafeMutableRawPointer?
-    var events: [[String: Any]] = []
-    var backForwardListEvents: [[String: Any]] = []
+    var eventCallback: WKRustCallback<WKNavCallback>?
+    var backForwardListCallback: WKRustCallback<WKNavCallback>?
+    var actionDecisionCallback: WKRustCallback<WKNavDecisionCallback>?
+    var responseDecisionCallback: WKRustCallback<WKNavDecisionCallback>?
+    let events = WKRustEventQueue()
+    let backForwardListEvents = WKRustEventQueue()
     var loadDone = false
     var loadError: String?
     var actionPolicy: WKRustNavigationActionPolicy = .allow
     var responsePolicy: WKRustNavigationResponsePolicy = .allow
     var backForwardListPolicy: WKRustBackForwardListNavigationPolicy = .allow
 
-    func drainEvents() -> UnsafeMutablePointer<CChar>? {
-        wkDrainEvents(&events)
-    }
-
-    func drainBackForwardListEvents() -> UnsafeMutablePointer<CChar>? {
-        wkDrainEvents(&backForwardListEvents)
-    }
-
     private func emit(_ payload: [String: Any]) {
-        events.append(payload)
-        wkEmitNavCallback(callback, userInfo, payload)
+        let json = wkJSONString(payload)
+        events.append(json: json)
+        if let callback = eventCallback {
+            json.withCString { callback.function(callback.userInfo, $0) }
+        }
     }
 
     private func emitBackForwardList(_ payload: [String: Any]) {
-        backForwardListEvents.append(payload)
-        wkEmitNavCallback(backForwardListCallback, backForwardListUserInfo, payload)
+        let json = wkJSONString(payload)
+        backForwardListEvents.append(json: json)
+        if let callback = backForwardListCallback {
+            json.withCString { callback.function(callback.userInfo, $0) }
+        }
+    }
+
+    private func decide(_ callback: WKRustCallback<WKNavDecisionCallback>, _ payload: [String: Any]) -> Int32 {
+        wkJSONString(payload).withCString { callback.function(callback.userInfo, $0) }
     }
 
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
@@ -258,15 +239,22 @@ final class WKRustNavDelegate: NSObject, WKNavigationDelegate {
         decidePolicyFor navigationAction: WKNavigationAction,
         decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
     ) {
+        let action = wkNavigationActionDictionary(navigationAction)
         emit(
             wkNavigationEvent(
                 kind: "decidePolicyForAction",
                 url: navigationAction.request.url?.absoluteString ?? "",
                 navigationType: navigationAction.navigationType.rawValue,
-                navigationAction: navigationAction
+                navigationAction: action
             )
         )
-        switch actionPolicy {
+        let policy: WKRustNavigationActionPolicy
+        if let callback = actionDecisionCallback {
+            policy = WKRustNavigationActionPolicy(rawValue: decide(callback, action)) ?? .cancel
+        } else {
+            policy = actionPolicy
+        }
+        switch policy {
         case .cancel:
             decisionHandler(.cancel)
         case .allow:
@@ -285,15 +273,22 @@ final class WKRustNavDelegate: NSObject, WKNavigationDelegate {
         decidePolicyFor navigationResponse: WKNavigationResponse,
         decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void
     ) {
+        let response = wkNavigationResponseDictionary(navigationResponse)
         emit(
             wkNavigationEvent(
                 kind: "decidePolicyForResponse",
                 url: navigationResponse.response.url?.absoluteString ?? "",
                 statusCode: (navigationResponse.response as? HTTPURLResponse)?.statusCode,
-                navigationResponse: navigationResponse
+                navigationResponse: response
             )
         )
-        switch responsePolicy {
+        let policy: WKRustNavigationResponsePolicy
+        if let callback = responseDecisionCallback {
+            policy = WKRustNavigationResponsePolicy(rawValue: decide(callback, response)) ?? .cancel
+        } else {
+            policy = responsePolicy
+        }
+        switch policy {
         case .cancel:
             decisionHandler(.cancel)
         case .allow:
@@ -321,7 +316,7 @@ final class WKRustNavDelegate: NSObject, WKNavigationDelegate {
                 kind: "navigationActionDidBecomeDownload",
                 url: navigationAction.request.url?.absoluteString ?? "",
                 navigationType: navigationAction.navigationType.rawValue,
-                navigationAction: navigationAction
+                navigationAction: wkNavigationActionDictionary(navigationAction)
             )
         )
     }
@@ -336,7 +331,7 @@ final class WKRustNavDelegate: NSObject, WKNavigationDelegate {
                 kind: "navigationResponseDidBecomeDownload",
                 url: navigationResponse.response.url?.absoluteString ?? "",
                 statusCode: (navigationResponse.response as? HTTPURLResponse)?.statusCode,
-                navigationResponse: navigationResponse
+                navigationResponse: wkNavigationResponseDictionary(navigationResponse)
             )
         )
     }

@@ -21,38 +21,37 @@ final class WKContentRuleListStoreBox: NSObject {
 
 @_cdecl("wk_content_rule_list_store_default")
 public func wk_content_rule_list_store_default() -> UnsafeMutableRawPointer? {
-    guard let store = WKContentRuleListStore.default() else {
-        return nil
+    wkOnMain {
+        WKContentRuleListStore.default().map { wkRetain(WKContentRuleListStoreBox(store: $0)) }
     }
-    return wkRetain(WKContentRuleListStoreBox(store: store))
 }
 
 @_cdecl("wk_content_rule_list_store_with_path")
 public func wk_content_rule_list_store_with_path(_ path: UnsafePointer<CChar>?) -> UnsafeMutableRawPointer? {
     guard let path else { return nil }
-    guard let store = WKContentRuleListStore(url: URL(fileURLWithPath: String(cString: path))) else {
-        return nil
+    let url = URL(fileURLWithPath: String(cString: path))
+    return wkOnMain {
+        WKContentRuleListStore(url: url).map { wkRetain(WKContentRuleListStoreBox(store: $0)) }
     }
-    return wkRetain(WKContentRuleListStoreBox(store: store))
 }
 
 @_cdecl("wk_content_rule_list_store_release")
 public func wk_content_rule_list_store_release(_ ptr: UnsafeMutableRawPointer?) {
     guard let ptr else { return }
-    wkRelease(ptr)
+    wkReleaseOnMain(ptr)
 }
 
 @_cdecl("wk_content_rule_list_release")
 public func wk_content_rule_list_release(_ ptr: UnsafeMutableRawPointer?) {
     guard let ptr else { return }
-    wkRelease(ptr)
+    wkReleaseOnMain(ptr)
 }
 
 @_cdecl("wk_content_rule_list_copy_identifier")
 public func wk_content_rule_list_copy_identifier(_ ptr: UnsafeMutableRawPointer?) -> UnsafeMutablePointer<CChar>? {
     guard let ptr else { return nil }
     let box: WKContentRuleListBox = wkBorrow(ptr)
-    return wkCString(box.ruleList.identifier)
+    return wkCString(wkOnMain { box.ruleList.identifier })
 }
 
 @_cdecl("wk_content_rule_list_store_compile")

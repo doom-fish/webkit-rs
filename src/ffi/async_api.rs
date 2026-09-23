@@ -20,7 +20,11 @@ unsafe extern "C" {
     );
     pub fn wk_webview_call_async_js_async(
         ptr: *mut c_void,
-        js: *const c_char,
+        function_body: *const c_char,
+        arguments_json: *const c_char,
+        frame: *mut c_void,
+        world_kind: i32,
+        world_name: *const c_char,
         cb: AsyncCb,
         ctx: *mut c_void,
     );

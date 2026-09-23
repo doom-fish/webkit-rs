@@ -93,6 +93,8 @@ pub enum WebKitError {
     Unsupported(String),
     /// Mirrors the `TimedOut` case used by `WKErrorDomain`.
     TimedOut(String),
+    #[allow(missing_docs)]
+    InvalidState(String),
     /// Mirrors the `FrameworkError` case used by `WKErrorDomain`.
     FrameworkError(String),
     /// Mirrors the `Unknown` case used by `WKErrorDomain`.
@@ -107,6 +109,7 @@ impl WebKitError {
             Self::InvalidArgument(message)
             | Self::Unsupported(message)
             | Self::TimedOut(message)
+            | Self::InvalidState(message)
             | Self::FrameworkError(message)
             | Self::Unknown(message) => message,
         }
@@ -119,6 +122,7 @@ impl fmt::Display for WebKitError {
             Self::InvalidArgument(message) => write!(f, "invalid argument: {message}"),
             Self::Unsupported(message) => write!(f, "unsupported: {message}"),
             Self::TimedOut(message) => write!(f, "timed out: {message}"),
+            Self::InvalidState(message) => write!(f, "invalid state: {message}"),
             Self::FrameworkError(message) => write!(f, "framework error: {message}"),
             Self::Unknown(message) => write!(f, "unknown error: {message}"),
         }
@@ -132,6 +136,7 @@ pub(crate) fn error_from_status(code: i32, message: String) -> WebKitError {
         status::INVALID_ARGUMENT => WebKitError::InvalidArgument(message),
         status::UNSUPPORTED => WebKitError::Unsupported(message),
         status::TIMED_OUT => WebKitError::TimedOut(message),
+        status::INVALID_STATE => WebKitError::InvalidState(message),
         status::FRAMEWORK_ERROR => WebKitError::FrameworkError(message),
         _ => WebKitError::Unknown(message),
     }
@@ -142,6 +147,7 @@ pub(crate) const fn status_from_error(error: &WebKitError) -> i32 {
         WebKitError::InvalidArgument(_) => status::INVALID_ARGUMENT,
         WebKitError::Unsupported(_) => status::UNSUPPORTED,
         WebKitError::TimedOut(_) => status::TIMED_OUT,
+        WebKitError::InvalidState(_) => status::INVALID_STATE,
         WebKitError::FrameworkError(_) => status::FRAMEWORK_ERROR,
         WebKitError::Unknown(_) => status::UNKNOWN,
     }
@@ -168,17 +174,21 @@ mod tests {
         let invalid = error_from_status(status::INVALID_ARGUMENT, "bad url".to_owned());
         let unsupported = error_from_status(status::UNSUPPORTED, "feature".to_owned());
         let timed_out = error_from_status(status::TIMED_OUT, "search".to_owned());
+        let invalid_state = error_from_status(status::INVALID_STATE, "stopped".to_owned());
         let framework = error_from_status(status::FRAMEWORK_ERROR, "bridge".to_owned());
         let unknown = error_from_status(42, "mystery".to_owned());
 
         assert_eq!(invalid.to_string(), "invalid argument: bad url");
         assert_eq!(unsupported.to_string(), "unsupported: feature");
         assert_eq!(timed_out.to_string(), "timed out: search");
+        assert_eq!(invalid_state.to_string(), "invalid state: stopped");
+        assert_eq!(invalid_state.message(), "stopped");
         assert_eq!(framework.to_string(), "framework error: bridge");
         assert_eq!(unknown.to_string(), "unknown error: mystery");
         assert_eq!(status_from_error(&invalid), status::INVALID_ARGUMENT);
         assert_eq!(status_from_error(&unsupported), status::UNSUPPORTED);
         assert_eq!(status_from_error(&timed_out), status::TIMED_OUT);
+        assert_eq!(status_from_error(&invalid_state), status::INVALID_STATE);
         assert_eq!(status_from_error(&framework), status::FRAMEWORK_ERROR);
         assert_eq!(status_from_error(&unknown), status::UNKNOWN);
     }

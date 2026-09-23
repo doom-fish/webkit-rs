@@ -12,9 +12,15 @@ unsafe extern "C" {
         start_callback: Option<WKURLSchemeTaskCallback>,
         stop_callback: Option<WKURLSchemeTaskCallback>,
         user_info: *mut c_void,
+        release: Option<unsafe extern "C" fn(*mut c_void)>,
         out_err: *mut *mut c_char,
     ) -> i32;
     pub fn wk_url_scheme_task_release(ptr: *mut c_void);
+    pub fn wk_url_scheme_task_copy_request_body(
+        ptr: *mut c_void,
+        out_bytes: *mut *mut u8,
+        out_len: *mut usize,
+    ) -> bool;
     pub fn wk_url_scheme_task_send_response_json(
         ptr: *mut c_void,
         response_json: *const c_char,

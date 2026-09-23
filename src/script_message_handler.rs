@@ -1,5 +1,9 @@
 use serde::Deserialize;
 
+use crate::content_world::ContentWorld;
+use crate::frame::FrameHandle;
+use crate::navigation_delegate::FrameInfo;
+
 /// Wraps `WKScriptMessage`.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -8,10 +12,11 @@ pub struct ScriptMessage {
     pub name: String,
     /// Mirrors the `body` value exposed by `WKScriptMessage`.
     pub body: String,
-    /// Mirrors the `frame_url` value exposed by `WKScriptMessage`.
-    pub frame_url: String,
-    /// Mirrors the `is_main_frame` value exposed by `WKScriptMessage`.
-    pub is_main_frame: bool,
+    #[allow(missing_docs)]
+    pub frame: FrameInfo,
     /// Mirrors the `world` value exposed by `WKScriptMessage`.
-    pub world: Option<String>,
+    pub world: ContentWorld,
+    #[allow(missing_docs)]
+    #[serde(skip)]
+    pub frame_handle: Option<FrameHandle>,
 }

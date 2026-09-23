@@ -56,8 +56,8 @@ impl ProxyConfiguration {
             ffi::wk_proxy_configuration_create_http_connect(
                 c_host.as_ptr(),
                 port,
-                &mut out_proxy_configuration,
-                &mut out_err,
+                &raw mut out_proxy_configuration,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -77,8 +77,8 @@ impl ProxyConfiguration {
             ffi::wk_proxy_configuration_create_socksv5(
                 c_host.as_ptr(),
                 port,
-                &mut out_proxy_configuration,
-                &mut out_err,
+                &raw mut out_proxy_configuration,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -106,7 +106,7 @@ impl ProxyConfiguration {
                 self.ptr,
                 c_username.as_ptr(),
                 password_ptr,
-                &mut out_err,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -119,7 +119,7 @@ impl ProxyConfiguration {
     pub fn set_failover_allowed(&self, allowed: bool) -> Result<(), WebKitError> {
         let mut out_err = ptr::null_mut();
         let status = unsafe {
-            ffi::wk_proxy_configuration_set_failover_allowed(self.ptr, allowed, &mut out_err)
+            ffi::wk_proxy_configuration_set_failover_allowed(self.ptr, allowed, &raw mut out_err)
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);
@@ -132,7 +132,11 @@ impl ProxyConfiguration {
         let c_domain = to_cstring(domain);
         let mut out_err = ptr::null_mut();
         let status = unsafe {
-            ffi::wk_proxy_configuration_add_match_domain(self.ptr, c_domain.as_ptr(), &mut out_err)
+            ffi::wk_proxy_configuration_add_match_domain(
+                self.ptr,
+                c_domain.as_ptr(),
+                &raw mut out_err,
+            )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);
@@ -144,7 +148,7 @@ impl ProxyConfiguration {
     pub fn clear_match_domains(&self) -> Result<(), WebKitError> {
         let mut out_err = ptr::null_mut();
         let status =
-            unsafe { ffi::wk_proxy_configuration_clear_match_domains(self.ptr, &mut out_err) };
+            unsafe { ffi::wk_proxy_configuration_clear_match_domains(self.ptr, &raw mut out_err) };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);
         }
@@ -159,7 +163,7 @@ impl ProxyConfiguration {
             ffi::wk_proxy_configuration_add_excluded_domain(
                 self.ptr,
                 c_domain.as_ptr(),
-                &mut out_err,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -171,8 +175,9 @@ impl ProxyConfiguration {
     /// Removes all excluded domains from the proxy configuration.
     pub fn clear_excluded_domains(&self) -> Result<(), WebKitError> {
         let mut out_err = ptr::null_mut();
-        let status =
-            unsafe { ffi::wk_proxy_configuration_clear_excluded_domains(self.ptr, &mut out_err) };
+        let status = unsafe {
+            ffi::wk_proxy_configuration_clear_excluded_domains(self.ptr, &raw mut out_err)
+        };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);
         }
@@ -184,7 +189,11 @@ impl ProxyConfiguration {
         let mut out_json = ptr::null_mut();
         let mut out_err = ptr::null_mut();
         let status = unsafe {
-            ffi::wk_proxy_configuration_copy_summary_json(self.ptr, &mut out_json, &mut out_err)
+            ffi::wk_proxy_configuration_copy_summary_json(
+                self.ptr,
+                &raw mut out_json,
+                &raw mut out_err,
+            )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);

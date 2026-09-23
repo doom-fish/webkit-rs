@@ -254,14 +254,12 @@ final class WKWebExtensionMessagePortBox: NSObject {
     }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_copy_constants_json")
 public func wk_web_extension_copy_constants_json() -> UnsafeMutablePointer<CChar>? {
     guard #available(macOS 15.4, *) else { return wkCString("{}") }
     return wkCString(wkJSONString(wkWebExtensionConstantsDictionary()))
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_create_with_resource_base_url")
 public func wk_web_extension_create_with_resource_base_url(
     _ path: UnsafePointer<CChar>?,
@@ -295,7 +293,6 @@ public func wk_web_extension_create_with_resource_base_url(
     return status
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_create_with_app_extension_bundle")
 public func wk_web_extension_create_with_app_extension_bundle(
     _ path: UnsafePointer<CChar>?,
@@ -333,92 +330,96 @@ public func wk_web_extension_create_with_app_extension_bundle(
     return status
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_release")
 public func wk_web_extension_release(_ ptr: UnsafeMutableRawPointer?) {
     guard let ptr else { return }
-    wkRelease(ptr)
+    wkReleaseOnMain(ptr)
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_copy_summary_json")
 public func wk_web_extension_copy_summary_json(_ ptr: UnsafeMutableRawPointer?) -> UnsafeMutablePointer<CChar>? {
-    guard let ptr, #available(macOS 15.4, *) else { return wkCString("{}") }
-    let box: WKWebExtensionBox = wkBorrow(ptr)
-    return wkCString(wkJSONString(wkWebExtensionSummaryDictionary(box.webExtension)))
+    return wkOnMain {
+        guard let ptr, #available(macOS 15.4, *) else { return wkCString("{}") }
+        let box: WKWebExtensionBox = wkBorrow(ptr)
+        return wkCString(wkJSONString(wkWebExtensionSummaryDictionary(box.webExtension)))
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_supports_manifest_version")
 public func wk_web_extension_supports_manifest_version(
     _ ptr: UnsafeMutableRawPointer?,
     _ manifestVersion: Double
 ) -> Bool {
-    guard let ptr, #available(macOS 15.4, *) else { return false }
-    let box: WKWebExtensionBox = wkBorrow(ptr)
-    return box.webExtension.supportsManifestVersion(manifestVersion)
+    return wkOnMain {
+        guard let ptr, #available(macOS 15.4, *) else { return false }
+        let box: WKWebExtensionBox = wkBorrow(ptr)
+        return box.webExtension.supportsManifestVersion(manifestVersion)
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_match_pattern_register_custom_url_scheme")
 public func wk_web_extension_match_pattern_register_custom_url_scheme(
     _ scheme: UnsafePointer<CChar>?,
     _ outErr: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
 ) -> Int32 {
-    guard let scheme else {
-        outErr?.pointee = wkCString("missing custom URL scheme")
-        return WK_INVALID_ARGUMENT
+    return wkOnMain {
+        guard let scheme else {
+            outErr?.pointee = wkCString("missing custom URL scheme")
+            return WK_INVALID_ARGUMENT
+        }
+        guard #available(macOS 15.4, *) else {
+            outErr?.pointee = wkCString("web extension match patterns require macOS 15.4")
+            return WK_UNSUPPORTED
+        }
+        WKWebExtension.MatchPattern.registerCustomURLScheme(String(cString: scheme))
+        return WK_OK
     }
-    guard #available(macOS 15.4, *) else {
-        outErr?.pointee = wkCString("web extension match patterns require macOS 15.4")
-        return WK_UNSUPPORTED
-    }
-    WKWebExtension.MatchPattern.registerCustomURLScheme(String(cString: scheme))
-    return WK_OK
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_match_pattern_all_urls")
 public func wk_web_extension_match_pattern_all_urls() -> UnsafeMutableRawPointer? {
-    guard #available(macOS 15.4, *) else { return nil }
-    return wkRetain(WKWebExtensionMatchPatternBox(matchPattern: WKWebExtension.MatchPattern.allURLs()))
+    return wkOnMain {
+        guard #available(macOS 15.4, *) else { return nil }
+        return wkRetain(WKWebExtensionMatchPatternBox(matchPattern: WKWebExtension.MatchPattern.allURLs()))
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_match_pattern_all_hosts_and_schemes")
 public func wk_web_extension_match_pattern_all_hosts_and_schemes() -> UnsafeMutableRawPointer? {
-    guard #available(macOS 15.4, *) else { return nil }
-    return wkRetain(
-        WKWebExtensionMatchPatternBox(matchPattern: WKWebExtension.MatchPattern.allHostsAndSchemes())
-    )
+    return wkOnMain {
+        guard #available(macOS 15.4, *) else { return nil }
+        return wkRetain(
+            WKWebExtensionMatchPatternBox(matchPattern: WKWebExtension.MatchPattern.allHostsAndSchemes())
+        )
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_match_pattern_with_string")
 public func wk_web_extension_match_pattern_with_string(
     _ pattern: UnsafePointer<CChar>?,
     _ outPattern: UnsafeMutablePointer<UnsafeMutableRawPointer?>?,
     _ outErr: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
 ) -> Int32 {
-    guard let pattern else {
-        outErr?.pointee = wkCString("missing match pattern string")
-        return WK_INVALID_ARGUMENT
-    }
-    guard #available(macOS 15.4, *) else {
-        outErr?.pointee = wkCString("web extension match patterns require macOS 15.4")
-        return WK_UNSUPPORTED
-    }
-    do {
-        let matchPattern = try WKWebExtension.MatchPattern(string: String(cString: pattern))
-        outPattern?.pointee = wkRetain(WKWebExtensionMatchPatternBox(matchPattern: matchPattern))
-        return WK_OK
-    } catch {
-        outErr?.pointee = wkCString(error.localizedDescription)
-        return WK_FRAMEWORK_ERROR
+    return wkOnMain {
+        guard let pattern else {
+            outErr?.pointee = wkCString("missing match pattern string")
+            return WK_INVALID_ARGUMENT
+        }
+        guard #available(macOS 15.4, *) else {
+            outErr?.pointee = wkCString("web extension match patterns require macOS 15.4")
+            return WK_UNSUPPORTED
+        }
+        do {
+            let matchPattern = try WKWebExtension.MatchPattern(string: String(cString: pattern))
+            outPattern?.pointee = wkRetain(WKWebExtensionMatchPatternBox(matchPattern: matchPattern))
+            return WK_OK
+        } catch {
+            outErr?.pointee = wkCString(error.localizedDescription)
+            return WK_FRAMEWORK_ERROR
+        }
     }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_match_pattern_with_components")
 public func wk_web_extension_match_pattern_with_components(
     _ scheme: UnsafePointer<CChar>?,
@@ -427,317 +428,335 @@ public func wk_web_extension_match_pattern_with_components(
     _ outPattern: UnsafeMutablePointer<UnsafeMutableRawPointer?>?,
     _ outErr: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
 ) -> Int32 {
-    guard let scheme, let host, let path else {
-        outErr?.pointee = wkCString("missing match pattern components")
-        return WK_INVALID_ARGUMENT
-    }
-    guard #available(macOS 15.4, *) else {
-        outErr?.pointee = wkCString("web extension match patterns require macOS 15.4")
-        return WK_UNSUPPORTED
-    }
-    do {
-        let matchPattern = try WKWebExtension.MatchPattern(
-            scheme: String(cString: scheme),
-            host: String(cString: host),
-            path: String(cString: path)
-        )
-        outPattern?.pointee = wkRetain(WKWebExtensionMatchPatternBox(matchPattern: matchPattern))
-        return WK_OK
-    } catch {
-        outErr?.pointee = wkCString(error.localizedDescription)
-        return WK_FRAMEWORK_ERROR
+    return wkOnMain {
+        guard let scheme, let host, let path else {
+            outErr?.pointee = wkCString("missing match pattern components")
+            return WK_INVALID_ARGUMENT
+        }
+        guard #available(macOS 15.4, *) else {
+            outErr?.pointee = wkCString("web extension match patterns require macOS 15.4")
+            return WK_UNSUPPORTED
+        }
+        do {
+            let matchPattern = try WKWebExtension.MatchPattern(
+                scheme: String(cString: scheme),
+                host: String(cString: host),
+                path: String(cString: path)
+            )
+            outPattern?.pointee = wkRetain(WKWebExtensionMatchPatternBox(matchPattern: matchPattern))
+            return WK_OK
+        } catch {
+            outErr?.pointee = wkCString(error.localizedDescription)
+            return WK_FRAMEWORK_ERROR
+        }
     }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_match_pattern_release")
 public func wk_web_extension_match_pattern_release(_ ptr: UnsafeMutableRawPointer?) {
     guard let ptr else { return }
-    wkRelease(ptr)
+    wkReleaseOnMain(ptr)
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_match_pattern_copy_summary_json")
 public func wk_web_extension_match_pattern_copy_summary_json(
     _ ptr: UnsafeMutableRawPointer?
 ) -> UnsafeMutablePointer<CChar>? {
-    guard let ptr, #available(macOS 15.4, *) else { return wkCString("{}") }
-    let box: WKWebExtensionMatchPatternBox = wkBorrow(ptr)
-    return wkCString(wkJSONString(wkWebExtensionMatchPatternDictionary(box.matchPattern)))
+    return wkOnMain {
+        guard let ptr, #available(macOS 15.4, *) else { return wkCString("{}") }
+        let box: WKWebExtensionMatchPatternBox = wkBorrow(ptr)
+        return wkCString(wkJSONString(wkWebExtensionMatchPatternDictionary(box.matchPattern)))
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_match_pattern_matches_url")
 public func wk_web_extension_match_pattern_matches_url(
     _ ptr: UnsafeMutableRawPointer?,
     _ url: UnsafePointer<CChar>?,
     _ options: UInt64
 ) -> Bool {
-    guard let ptr,
-          let url,
-          let parsedURL = URL(string: String(cString: url)),
-          #available(macOS 15.4, *)
-    else {
-        return false
+    return wkOnMain {
+        guard let ptr,
+              let url,
+              let parsedURL = URL(string: String(cString: url)),
+              #available(macOS 15.4, *)
+        else {
+            return false
+        }
+        let box: WKWebExtensionMatchPatternBox = wkBorrow(ptr)
+        return box.matchPattern.matches(parsedURL, options: wkWebExtensionMatchPatternOptions(options))
     }
-    let box: WKWebExtensionMatchPatternBox = wkBorrow(ptr)
-    return box.matchPattern.matches(parsedURL, options: wkWebExtensionMatchPatternOptions(options))
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_match_pattern_matches_pattern")
 public func wk_web_extension_match_pattern_matches_pattern(
     _ ptr: UnsafeMutableRawPointer?,
     _ otherPtr: UnsafeMutableRawPointer?,
     _ options: UInt64
 ) -> Bool {
-    guard let ptr, let otherPtr, #available(macOS 15.4, *) else { return false }
-    let box: WKWebExtensionMatchPatternBox = wkBorrow(ptr)
-    let otherBox: WKWebExtensionMatchPatternBox = wkBorrow(otherPtr)
-    return box.matchPattern.matches(otherBox.matchPattern, options: wkWebExtensionMatchPatternOptions(options))
+    return wkOnMain {
+        guard let ptr, let otherPtr, #available(macOS 15.4, *) else { return false }
+        let box: WKWebExtensionMatchPatternBox = wkBorrow(ptr)
+        let otherBox: WKWebExtensionMatchPatternBox = wkBorrow(otherPtr)
+        return box.matchPattern.matches(otherBox.matchPattern, options: wkWebExtensionMatchPatternOptions(options))
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_configuration_default")
 public func wk_web_extension_controller_configuration_default() -> UnsafeMutableRawPointer? {
-    guard #available(macOS 15.4, *) else { return nil }
-    return wkRetain(
-        WKWebExtensionControllerConfigurationBox(
-            configuration: WKWebExtensionController.Configuration.default()
+    return wkOnMain {
+        guard #available(macOS 15.4, *) else { return nil }
+        return wkRetain(
+            WKWebExtensionControllerConfigurationBox(
+                configuration: WKWebExtensionController.Configuration.default()
+            )
         )
-    )
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_configuration_nonpersistent")
 public func wk_web_extension_controller_configuration_nonpersistent() -> UnsafeMutableRawPointer? {
-    guard #available(macOS 15.4, *) else { return nil }
-    return wkRetain(
-        WKWebExtensionControllerConfigurationBox(
-            configuration: WKWebExtensionController.Configuration.nonPersistent()
+    return wkOnMain {
+        guard #available(macOS 15.4, *) else { return nil }
+        return wkRetain(
+            WKWebExtensionControllerConfigurationBox(
+                configuration: WKWebExtensionController.Configuration.nonPersistent()
+            )
         )
-    )
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_configuration_with_identifier")
 public func wk_web_extension_controller_configuration_with_identifier(
     _ identifier: UnsafePointer<CChar>?,
     _ outConfiguration: UnsafeMutablePointer<UnsafeMutableRawPointer?>?,
     _ outErr: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
 ) -> Int32 {
-    guard let identifier else {
-        outErr?.pointee = wkCString("missing controller configuration identifier")
-        return WK_INVALID_ARGUMENT
-    }
-    guard #available(macOS 15.4, *) else {
-        outErr?.pointee = wkCString("web extension controller configuration requires macOS 15.4")
-        return WK_UNSUPPORTED
-    }
-    guard let uuid = UUID(uuidString: String(cString: identifier)) else {
-        outErr?.pointee = wkCString("invalid UUID string")
-        return WK_INVALID_ARGUMENT
-    }
-    outConfiguration?.pointee = wkRetain(
-        WKWebExtensionControllerConfigurationBox(
-            configuration: WKWebExtensionController.Configuration(identifier: uuid)
+    return wkOnMain {
+        guard let identifier else {
+            outErr?.pointee = wkCString("missing controller configuration identifier")
+            return WK_INVALID_ARGUMENT
+        }
+        guard #available(macOS 15.4, *) else {
+            outErr?.pointee = wkCString("web extension controller configuration requires macOS 15.4")
+            return WK_UNSUPPORTED
+        }
+        guard let uuid = UUID(uuidString: String(cString: identifier)) else {
+            outErr?.pointee = wkCString("invalid UUID string")
+            return WK_INVALID_ARGUMENT
+        }
+        outConfiguration?.pointee = wkRetain(
+            WKWebExtensionControllerConfigurationBox(
+                configuration: WKWebExtensionController.Configuration(identifier: uuid)
+            )
         )
-    )
-    return WK_OK
+        return WK_OK
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_configuration_release")
 public func wk_web_extension_controller_configuration_release(_ ptr: UnsafeMutableRawPointer?) {
     guard let ptr else { return }
-    wkRelease(ptr)
+    wkReleaseOnMain(ptr)
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_configuration_copy_summary_json")
 public func wk_web_extension_controller_configuration_copy_summary_json(
     _ ptr: UnsafeMutableRawPointer?
 ) -> UnsafeMutablePointer<CChar>? {
-    guard let ptr, #available(macOS 15.4, *) else { return wkCString("{}") }
-    let box: WKWebExtensionControllerConfigurationBox = wkBorrow(ptr)
-    let dictionary: [String: Any] = [
-        "persistent": box.configuration.isPersistent,
-        "identifier": box.configuration.identifier?.uuidString ?? NSNull()
-    ]
-    return wkCString(wkJSONString(dictionary))
+    return wkOnMain {
+        guard let ptr, #available(macOS 15.4, *) else { return wkCString("{}") }
+        let box: WKWebExtensionControllerConfigurationBox = wkBorrow(ptr)
+        let dictionary: [String: Any] = [
+            "persistent": box.configuration.isPersistent,
+            "identifier": box.configuration.identifier?.uuidString ?? NSNull()
+        ]
+        return wkCString(wkJSONString(dictionary))
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_configuration_set_webview_configuration")
 public func wk_web_extension_controller_configuration_set_webview_configuration(
     _ ptr: UnsafeMutableRawPointer?,
     _ configPtr: UnsafeMutableRawPointer?
 ) {
-    guard let ptr, let configPtr, #available(macOS 15.4, *) else { return }
-    let box: WKWebExtensionControllerConfigurationBox = wkBorrow(ptr)
-    let configBox: WKConfigBox = wkBorrow(configPtr)
-    box.configuration.webViewConfiguration = (configBox.config.copy() as! WKWebViewConfiguration)
+    wkOnMain {
+        guard let ptr, let configPtr, #available(macOS 15.4, *) else { return }
+        let box: WKWebExtensionControllerConfigurationBox = wkBorrow(ptr)
+        let configBox: WKConfigBox = wkBorrow(configPtr)
+        guard let configuration = configBox.config.copy() as? WKWebViewConfiguration else { return }
+        box.configuration.webViewConfiguration = configuration
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_configuration_copy_webview_configuration")
 public func wk_web_extension_controller_configuration_copy_webview_configuration(
     _ ptr: UnsafeMutableRawPointer?
 ) -> UnsafeMutableRawPointer? {
-    guard let ptr, #available(macOS 15.4, *) else { return nil }
-    let box: WKWebExtensionControllerConfigurationBox = wkBorrow(ptr)
-    return wkRetain(WKConfigBox(configuration: box.configuration.webViewConfiguration))
+    return wkOnMain {
+        guard let ptr, #available(macOS 15.4, *) else { return nil }
+        let box: WKWebExtensionControllerConfigurationBox = wkBorrow(ptr)
+        return wkRetain(WKConfigBox(configuration: box.configuration.webViewConfiguration))
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_configuration_set_default_website_data_store")
 public func wk_web_extension_controller_configuration_set_default_website_data_store(
     _ ptr: UnsafeMutableRawPointer?,
     _ storePtr: UnsafeMutableRawPointer?
 ) {
-    guard let ptr, let storePtr, #available(macOS 15.4, *) else { return }
-    let box: WKWebExtensionControllerConfigurationBox = wkBorrow(ptr)
-    let storeBox: WKWebsiteDataStoreBox = wkBorrow(storePtr)
-    box.configuration.defaultWebsiteDataStore = storeBox.dataStore
+    wkOnMain {
+        guard let ptr, let storePtr, #available(macOS 15.4, *) else { return }
+        let box: WKWebExtensionControllerConfigurationBox = wkBorrow(ptr)
+        let storeBox: WKWebsiteDataStoreBox = wkBorrow(storePtr)
+        box.configuration.defaultWebsiteDataStore = storeBox.dataStore
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_configuration_copy_default_website_data_store")
 public func wk_web_extension_controller_configuration_copy_default_website_data_store(
     _ ptr: UnsafeMutableRawPointer?
 ) -> UnsafeMutableRawPointer? {
-    guard let ptr, #available(macOS 15.4, *) else { return nil }
-    let box: WKWebExtensionControllerConfigurationBox = wkBorrow(ptr)
-    return wkRetain(WKWebsiteDataStoreBox(dataStore: box.configuration.defaultWebsiteDataStore))
+    return wkOnMain {
+        guard let ptr, #available(macOS 15.4, *) else { return nil }
+        let box: WKWebExtensionControllerConfigurationBox = wkBorrow(ptr)
+        return wkRetain(WKWebsiteDataStoreBox(dataStore: box.configuration.defaultWebsiteDataStore))
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_new")
 public func wk_web_extension_controller_new() -> UnsafeMutableRawPointer? {
-    guard #available(macOS 15.4, *) else { return nil }
-    return wkRetain(WKWebExtensionControllerBox(controller: WKWebExtensionController()))
+    return wkOnMain {
+        guard #available(macOS 15.4, *) else { return nil }
+        return wkRetain(WKWebExtensionControllerBox(controller: WKWebExtensionController()))
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_with_configuration")
 public func wk_web_extension_controller_with_configuration(
     _ configurationPtr: UnsafeMutableRawPointer?
 ) -> UnsafeMutableRawPointer? {
-    guard let configurationPtr, #available(macOS 15.4, *) else { return nil }
-    let configurationBox: WKWebExtensionControllerConfigurationBox = wkBorrow(configurationPtr)
-    return wkRetain(
-        WKWebExtensionControllerBox(
-            controller: WKWebExtensionController(configuration: configurationBox.configuration)
+    return wkOnMain {
+        guard let configurationPtr, #available(macOS 15.4, *) else { return nil }
+        let configurationBox: WKWebExtensionControllerConfigurationBox = wkBorrow(configurationPtr)
+        return wkRetain(
+            WKWebExtensionControllerBox(
+                controller: WKWebExtensionController(configuration: configurationBox.configuration)
+            )
         )
-    )
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_release")
 public func wk_web_extension_controller_release(_ ptr: UnsafeMutableRawPointer?) {
     guard let ptr else { return }
-    wkRelease(ptr)
+    wkReleaseOnMain(ptr)
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_copy_configuration")
 public func wk_web_extension_controller_copy_configuration(
     _ ptr: UnsafeMutableRawPointer?
 ) -> UnsafeMutableRawPointer? {
-    guard let ptr, #available(macOS 15.4, *) else { return nil }
-    let box: WKWebExtensionControllerBox = wkBorrow(ptr)
-    return wkRetain(
-        WKWebExtensionControllerConfigurationBox(configuration: box.controller.configuration)
-    )
+    return wkOnMain {
+        guard let ptr, #available(macOS 15.4, *) else { return nil }
+        let box: WKWebExtensionControllerBox = wkBorrow(ptr)
+        return wkRetain(
+            WKWebExtensionControllerConfigurationBox(configuration: box.controller.configuration)
+        )
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_load_context")
 public func wk_web_extension_controller_load_context(
     _ ptr: UnsafeMutableRawPointer?,
     _ contextPtr: UnsafeMutableRawPointer?,
     _ outErr: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
 ) -> Int32 {
-    guard let ptr, let contextPtr, #available(macOS 15.4, *) else {
-        outErr?.pointee = wkCString("missing web extension controller or context")
-        return WK_INVALID_ARGUMENT
-    }
-    let box: WKWebExtensionControllerBox = wkBorrow(ptr)
-    let contextBox: WKWebExtensionContextBox = wkBorrow(contextPtr)
-    do {
-        try box.controller.load(contextBox.context)
-        return WK_OK
-    } catch {
-        outErr?.pointee = wkCString(error.localizedDescription)
-        return WK_FRAMEWORK_ERROR
+    return wkOnMain {
+        guard let ptr, let contextPtr, #available(macOS 15.4, *) else {
+            outErr?.pointee = wkCString("missing web extension controller or context")
+            return WK_INVALID_ARGUMENT
+        }
+        let box: WKWebExtensionControllerBox = wkBorrow(ptr)
+        let contextBox: WKWebExtensionContextBox = wkBorrow(contextPtr)
+        do {
+            try box.controller.load(contextBox.context)
+            return WK_OK
+        } catch {
+            outErr?.pointee = wkCString(error.localizedDescription)
+            return WK_FRAMEWORK_ERROR
+        }
     }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_unload_context")
 public func wk_web_extension_controller_unload_context(
     _ ptr: UnsafeMutableRawPointer?,
     _ contextPtr: UnsafeMutableRawPointer?,
     _ outErr: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
 ) -> Int32 {
-    guard let ptr, let contextPtr, #available(macOS 15.4, *) else {
-        outErr?.pointee = wkCString("missing web extension controller or context")
-        return WK_INVALID_ARGUMENT
-    }
-    let box: WKWebExtensionControllerBox = wkBorrow(ptr)
-    let contextBox: WKWebExtensionContextBox = wkBorrow(contextPtr)
-    do {
-        try box.controller.unload(contextBox.context)
-        return WK_OK
-    } catch {
-        outErr?.pointee = wkCString(error.localizedDescription)
-        return WK_FRAMEWORK_ERROR
+    return wkOnMain {
+        guard let ptr, let contextPtr, #available(macOS 15.4, *) else {
+            outErr?.pointee = wkCString("missing web extension controller or context")
+            return WK_INVALID_ARGUMENT
+        }
+        let box: WKWebExtensionControllerBox = wkBorrow(ptr)
+        let contextBox: WKWebExtensionContextBox = wkBorrow(contextPtr)
+        do {
+            try box.controller.unload(contextBox.context)
+            return WK_OK
+        } catch {
+            outErr?.pointee = wkCString(error.localizedDescription)
+            return WK_FRAMEWORK_ERROR
+        }
     }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_copy_context_for_extension")
 public func wk_web_extension_controller_copy_context_for_extension(
     _ ptr: UnsafeMutableRawPointer?,
     _ extensionPtr: UnsafeMutableRawPointer?
 ) -> UnsafeMutableRawPointer? {
-    guard let ptr, let extensionPtr, #available(macOS 15.4, *) else { return nil }
-    let box: WKWebExtensionControllerBox = wkBorrow(ptr)
-    let extensionBox: WKWebExtensionBox = wkBorrow(extensionPtr)
-    guard let context = box.controller.extensionContext(for: extensionBox.webExtension) else {
-        return nil
+    return wkOnMain {
+        guard let ptr, let extensionPtr, #available(macOS 15.4, *) else { return nil }
+        let box: WKWebExtensionControllerBox = wkBorrow(ptr)
+        let extensionBox: WKWebExtensionBox = wkBorrow(extensionPtr)
+        guard let context = box.controller.extensionContext(for: extensionBox.webExtension) else {
+            return nil
+        }
+        return wkRetain(WKWebExtensionContextBox(context: context))
     }
-    return wkRetain(WKWebExtensionContextBox(context: context))
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_copy_context_for_url")
 public func wk_web_extension_controller_copy_context_for_url(
     _ ptr: UnsafeMutableRawPointer?,
     _ url: UnsafePointer<CChar>?
 ) -> UnsafeMutableRawPointer? {
-    guard let ptr,
-          let url,
-          let parsedURL = URL(string: String(cString: url)),
-          #available(macOS 15.4, *)
-    else {
-        return nil
+    return wkOnMain {
+        guard let ptr,
+              let url,
+              let parsedURL = URL(string: String(cString: url)),
+              #available(macOS 15.4, *)
+        else {
+            return nil
+        }
+        let box: WKWebExtensionControllerBox = wkBorrow(ptr)
+        guard let context = box.controller.extensionContext(for: parsedURL) else {
+            return nil
+        }
+        return wkRetain(WKWebExtensionContextBox(context: context))
     }
-    let box: WKWebExtensionControllerBox = wkBorrow(ptr)
-    guard let context = box.controller.extensionContext(for: parsedURL) else {
-        return nil
-    }
-    return wkRetain(WKWebExtensionContextBox(context: context))
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_copy_all_data_types_json")
 public func wk_web_extension_controller_copy_all_data_types_json() -> UnsafeMutablePointer<CChar>? {
-    guard #available(macOS 15.4, *) else { return wkCString("[]") }
-    return wkCString(wkJSONString(wkWebExtensionDataTypeArray(WKWebExtensionController.allExtensionDataTypes)))
+    return wkOnMain {
+        guard #available(macOS 15.4, *) else { return wkCString("[]") }
+        return wkCString(wkJSONString(wkWebExtensionDataTypeArray(WKWebExtensionController.allExtensionDataTypes)))
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_copy_data_records_json")
 public func wk_web_extension_controller_copy_data_records_json(
     _ ptr: UnsafeMutableRawPointer?,
@@ -751,22 +770,19 @@ public func wk_web_extension_controller_copy_data_records_json(
     }
     let box: WKWebExtensionControllerBox = wkBorrow(ptr)
     let dataTypes = wkWebExtensionDataTypeSet(from: dataTypesJson)
-    let (status, records, error): (Int32, [WKWebExtension.DataRecord]?, String?) = wkWaitForAsync { completion in
+    let (status, records, error): (Int32, [[String: Any]]?, String?) = wkWaitForAsync { completion in
         Task { @MainActor in
             let records = await box.controller.dataRecords(ofTypes: dataTypes)
-            completion(records, nil)
+            completion(records.map(wkWebExtensionDataRecordDictionary), nil)
         }
     }
     if let error {
         outErr?.pointee = wkCString(error)
     }
-    outJson?.pointee = wkCString(
-        wkJSONString(records?.map(wkWebExtensionDataRecordDictionary) ?? [])
-    )
+    outJson?.pointee = wkCString(wkJSONString(records ?? []))
     return status
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_copy_data_record_json_for_context")
 public func wk_web_extension_controller_copy_data_record_json_for_context(
     _ ptr: UnsafeMutableRawPointer?,
@@ -782,22 +798,23 @@ public func wk_web_extension_controller_copy_data_record_json_for_context(
     let box: WKWebExtensionControllerBox = wkBorrow(ptr)
     let contextBox: WKWebExtensionContextBox = wkBorrow(contextPtr)
     let dataTypes = wkWebExtensionDataTypeSet(from: dataTypesJson)
-    let (status, record, error): (Int32, WKWebExtension.DataRecord?, String?) = wkWaitForAsync { completion in
+    let (status, record, error): (Int32, [String: Any]?, String?) = wkWaitForAsync { completion in
         Task { @MainActor in
             let record = await box.controller.dataRecord(ofTypes: dataTypes, for: contextBox.context)
-            completion(record, nil)
+            completion(record.map(wkWebExtensionDataRecordDictionary) ?? [:], nil)
         }
     }
     if let error {
         outErr?.pointee = wkCString(error)
     }
-    outJson?.pointee = wkCString(
-        wkJSONString(record.map(wkWebExtensionDataRecordDictionary) ?? NSNull())
-    )
+    if let record, !record.isEmpty {
+        outJson?.pointee = wkCString(wkJSONString(record))
+    } else {
+        outJson?.pointee = wkCString("null")
+    }
     return status
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_controller_remove_data_for_identifiers")
 public func wk_web_extension_controller_remove_data_for_identifiers(
     _ ptr: UnsafeMutableRawPointer?,
@@ -826,173 +843,184 @@ public func wk_web_extension_controller_remove_data_for_identifiers(
     return status
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_new_for_extension")
 public func wk_web_extension_context_new_for_extension(
     _ extensionPtr: UnsafeMutableRawPointer?
 ) -> UnsafeMutableRawPointer? {
-    guard let extensionPtr, #available(macOS 15.4, *) else { return nil }
-    let extensionBox: WKWebExtensionBox = wkBorrow(extensionPtr)
-    return wkRetain(WKWebExtensionContextBox(context: WKWebExtensionContext(for: extensionBox.webExtension)))
+    return wkOnMain {
+        guard let extensionPtr, #available(macOS 15.4, *) else { return nil }
+        let extensionBox: WKWebExtensionBox = wkBorrow(extensionPtr)
+        return wkRetain(WKWebExtensionContextBox(context: WKWebExtensionContext(for: extensionBox.webExtension)))
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_release")
 public func wk_web_extension_context_release(_ ptr: UnsafeMutableRawPointer?) {
     guard let ptr else { return }
-    wkRelease(ptr)
+    wkReleaseOnMain(ptr)
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_copy_summary_json")
 public func wk_web_extension_context_copy_summary_json(
     _ ptr: UnsafeMutableRawPointer?
 ) -> UnsafeMutablePointer<CChar>? {
-    guard let ptr, #available(macOS 15.4, *) else { return wkCString("{}") }
-    let box: WKWebExtensionContextBox = wkBorrow(ptr)
-    return wkCString(wkJSONString(wkWebExtensionContextSummaryDictionary(box.context)))
+    return wkOnMain {
+        guard let ptr, #available(macOS 15.4, *) else { return wkCString("{}") }
+        let box: WKWebExtensionContextBox = wkBorrow(ptr)
+        return wkCString(wkJSONString(wkWebExtensionContextSummaryDictionary(box.context)))
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_set_base_url")
 public func wk_web_extension_context_set_base_url(
     _ ptr: UnsafeMutableRawPointer?,
     _ url: UnsafePointer<CChar>?,
     _ outErr: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
 ) -> Int32 {
-    guard let ptr, let url, let parsedURL = URL(string: String(cString: url)), #available(macOS 15.4, *) else {
-        outErr?.pointee = wkCString("invalid base URL")
-        return WK_INVALID_ARGUMENT
+    return wkOnMain {
+        guard let ptr, let url, let parsedURL = URL(string: String(cString: url)), #available(macOS 15.4, *) else {
+            outErr?.pointee = wkCString("invalid base URL")
+            return WK_INVALID_ARGUMENT
+        }
+        let box: WKWebExtensionContextBox = wkBorrow(ptr)
+        box.context.baseURL = parsedURL
+        return WK_OK
     }
-    let box: WKWebExtensionContextBox = wkBorrow(ptr)
-    box.context.baseURL = parsedURL
-    return WK_OK
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_set_unique_identifier")
 public func wk_web_extension_context_set_unique_identifier(
     _ ptr: UnsafeMutableRawPointer?,
     _ identifier: UnsafePointer<CChar>?,
     _ outErr: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
 ) -> Int32 {
-    guard let ptr, let identifier, #available(macOS 15.4, *) else {
-        outErr?.pointee = wkCString("missing web extension unique identifier")
-        return WK_INVALID_ARGUMENT
+    return wkOnMain {
+        guard let ptr, let identifier, #available(macOS 15.4, *) else {
+            outErr?.pointee = wkCString("missing web extension unique identifier")
+            return WK_INVALID_ARGUMENT
+        }
+        let box: WKWebExtensionContextBox = wkBorrow(ptr)
+        box.context.uniqueIdentifier = String(cString: identifier)
+        return WK_OK
     }
-    let box: WKWebExtensionContextBox = wkBorrow(ptr)
-    box.context.uniqueIdentifier = String(cString: identifier)
-    return WK_OK
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_set_inspectable")
 public func wk_web_extension_context_set_inspectable(
     _ ptr: UnsafeMutableRawPointer?,
     _ value: Bool
 ) {
-    guard let ptr, #available(macOS 15.4, *) else { return }
-    let box: WKWebExtensionContextBox = wkBorrow(ptr)
-    box.context.isInspectable = value
+    wkOnMain {
+        guard let ptr, #available(macOS 15.4, *) else { return }
+        let box: WKWebExtensionContextBox = wkBorrow(ptr)
+        box.context.isInspectable = value
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_set_inspection_name")
 public func wk_web_extension_context_set_inspection_name(
     _ ptr: UnsafeMutableRawPointer?,
     _ name: UnsafePointer<CChar>?
 ) {
-    guard let ptr, #available(macOS 15.4, *) else { return }
-    let box: WKWebExtensionContextBox = wkBorrow(ptr)
-    box.context.inspectionName = name.map(String.init(cString:))
+    wkOnMain {
+        guard let ptr, #available(macOS 15.4, *) else { return }
+        let box: WKWebExtensionContextBox = wkBorrow(ptr)
+        box.context.inspectionName = name.map(String.init(cString:))
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_set_unsupported_apis_json")
 public func wk_web_extension_context_set_unsupported_apis_json(
     _ ptr: UnsafeMutableRawPointer?,
     _ apisJson: UnsafePointer<CChar>?
 ) {
-    guard let ptr, #available(macOS 15.4, *) else { return }
-    let box: WKWebExtensionContextBox = wkBorrow(ptr)
-    box.context.unsupportedAPIs = Set(wkStringArray(from: apisJson))
+    wkOnMain {
+        guard let ptr, #available(macOS 15.4, *) else { return }
+        let box: WKWebExtensionContextBox = wkBorrow(ptr)
+        box.context.unsupportedAPIs = Set(wkStringArray(from: apisJson))
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_set_requested_optional_access_to_all_hosts")
 public func wk_web_extension_context_set_requested_optional_access_to_all_hosts(
     _ ptr: UnsafeMutableRawPointer?,
     _ value: Bool
 ) {
-    guard let ptr, #available(macOS 15.4, *) else { return }
-    let box: WKWebExtensionContextBox = wkBorrow(ptr)
-    box.context.hasRequestedOptionalAccessToAllHosts = value
+    wkOnMain {
+        guard let ptr, #available(macOS 15.4, *) else { return }
+        let box: WKWebExtensionContextBox = wkBorrow(ptr)
+        box.context.hasRequestedOptionalAccessToAllHosts = value
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_set_access_to_private_data")
 public func wk_web_extension_context_set_access_to_private_data(
     _ ptr: UnsafeMutableRawPointer?,
     _ value: Bool
 ) {
-    guard let ptr, #available(macOS 15.4, *) else { return }
-    let box: WKWebExtensionContextBox = wkBorrow(ptr)
-    box.context.hasAccessToPrivateData = value
+    wkOnMain {
+        guard let ptr, #available(macOS 15.4, *) else { return }
+        let box: WKWebExtensionContextBox = wkBorrow(ptr)
+        box.context.hasAccessToPrivateData = value
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_copy_webview_configuration")
 public func wk_web_extension_context_copy_webview_configuration(
     _ ptr: UnsafeMutableRawPointer?
 ) -> UnsafeMutableRawPointer? {
-    guard let ptr, #available(macOS 15.4, *) else { return nil }
-    let box: WKWebExtensionContextBox = wkBorrow(ptr)
-    guard let configuration = box.context.webViewConfiguration else {
-        return nil
+    return wkOnMain {
+        guard let ptr, #available(macOS 15.4, *) else { return nil }
+        let box: WKWebExtensionContextBox = wkBorrow(ptr)
+        guard let configuration = box.context.webViewConfiguration else {
+            return nil
+        }
+        return wkRetain(WKConfigBox(configuration: configuration))
     }
-    return wkRetain(WKConfigBox(configuration: configuration))
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_has_permission")
 public func wk_web_extension_context_has_permission(
     _ ptr: UnsafeMutableRawPointer?,
     _ permission: UnsafePointer<CChar>?
 ) -> Bool {
-    guard let ptr, let permission, #available(macOS 15.4, *) else { return false }
-    let box: WKWebExtensionContextBox = wkBorrow(ptr)
-    return box.context.hasPermission(wkWebExtensionPermission(String(cString: permission)))
+    return wkOnMain {
+        guard let ptr, let permission, #available(macOS 15.4, *) else { return false }
+        let box: WKWebExtensionContextBox = wkBorrow(ptr)
+        return box.context.hasPermission(wkWebExtensionPermission(String(cString: permission)))
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_has_access_to_url")
 public func wk_web_extension_context_has_access_to_url(
     _ ptr: UnsafeMutableRawPointer?,
     _ url: UnsafePointer<CChar>?
 ) -> Bool {
-    guard let ptr,
-          let url,
-          let parsedURL = URL(string: String(cString: url)),
-          #available(macOS 15.4, *)
-    else {
-        return false
+    return wkOnMain {
+        guard let ptr,
+              let url,
+              let parsedURL = URL(string: String(cString: url)),
+              #available(macOS 15.4, *)
+        else {
+            return false
+        }
+        let box: WKWebExtensionContextBox = wkBorrow(ptr)
+        return box.context.hasAccess(to: parsedURL)
     }
-    let box: WKWebExtensionContextBox = wkBorrow(ptr)
-    return box.context.hasAccess(to: parsedURL)
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_permission_status_for_permission")
 public func wk_web_extension_context_permission_status_for_permission(
     _ ptr: UnsafeMutableRawPointer?,
     _ permission: UnsafePointer<CChar>?
 ) -> Int64 {
-    guard let ptr, let permission, #available(macOS 15.4, *) else { return 0 }
-    let box: WKWebExtensionContextBox = wkBorrow(ptr)
-    return Int64(box.context.permissionStatus(for: wkWebExtensionPermission(String(cString: permission))).rawValue)
+    return wkOnMain {
+        guard let ptr, let permission, #available(macOS 15.4, *) else { return 0 }
+        let box: WKWebExtensionContextBox = wkBorrow(ptr)
+        return Int64(box.context.permissionStatus(for: wkWebExtensionPermission(String(cString: permission))).rawValue)
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_set_permission_status_for_permission")
 public func wk_web_extension_context_set_permission_status_for_permission(
     _ ptr: UnsafeMutableRawPointer?,
@@ -1000,36 +1028,38 @@ public func wk_web_extension_context_set_permission_status_for_permission(
     _ permission: UnsafePointer<CChar>?,
     _ outErr: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
 ) -> Int32 {
-    guard let ptr, let permission, #available(macOS 15.4, *) else {
-        outErr?.pointee = wkCString("missing web extension context permission")
-        return WK_INVALID_ARGUMENT
+    return wkOnMain {
+        guard let ptr, let permission, #available(macOS 15.4, *) else {
+            outErr?.pointee = wkCString("missing web extension context permission")
+            return WK_INVALID_ARGUMENT
+        }
+        let box: WKWebExtensionContextBox = wkBorrow(ptr)
+        box.context.setPermissionStatus(
+            wkWebExtensionPermissionStatus(status),
+            for: wkWebExtensionPermission(String(cString: permission))
+        )
+        return WK_OK
     }
-    let box: WKWebExtensionContextBox = wkBorrow(ptr)
-    box.context.setPermissionStatus(
-        wkWebExtensionPermissionStatus(status),
-        for: wkWebExtensionPermission(String(cString: permission))
-    )
-    return WK_OK
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_permission_status_for_url")
 public func wk_web_extension_context_permission_status_for_url(
     _ ptr: UnsafeMutableRawPointer?,
     _ url: UnsafePointer<CChar>?
 ) -> Int64 {
-    guard let ptr,
-          let url,
-          let parsedURL = URL(string: String(cString: url)),
-          #available(macOS 15.4, *)
-    else {
-        return 0
+    return wkOnMain {
+        guard let ptr,
+              let url,
+              let parsedURL = URL(string: String(cString: url)),
+              #available(macOS 15.4, *)
+        else {
+            return 0
+        }
+        let box: WKWebExtensionContextBox = wkBorrow(ptr)
+        return Int64(box.context.permissionStatus(for: parsedURL).rawValue)
     }
-    let box: WKWebExtensionContextBox = wkBorrow(ptr)
-    return Int64(box.context.permissionStatus(for: parsedURL).rawValue)
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_set_permission_status_for_url")
 public func wk_web_extension_context_set_permission_status_for_url(
     _ ptr: UnsafeMutableRawPointer?,
@@ -1037,32 +1067,34 @@ public func wk_web_extension_context_set_permission_status_for_url(
     _ url: UnsafePointer<CChar>?,
     _ outErr: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
 ) -> Int32 {
-    guard let ptr,
-          let url,
-          let parsedURL = URL(string: String(cString: url)),
-          #available(macOS 15.4, *)
-    else {
-        outErr?.pointee = wkCString("invalid URL permission target")
-        return WK_INVALID_ARGUMENT
+    return wkOnMain {
+        guard let ptr,
+              let url,
+              let parsedURL = URL(string: String(cString: url)),
+              #available(macOS 15.4, *)
+        else {
+            outErr?.pointee = wkCString("invalid URL permission target")
+            return WK_INVALID_ARGUMENT
+        }
+        let box: WKWebExtensionContextBox = wkBorrow(ptr)
+        box.context.setPermissionStatus(wkWebExtensionPermissionStatus(status), for: parsedURL)
+        return WK_OK
     }
-    let box: WKWebExtensionContextBox = wkBorrow(ptr)
-    box.context.setPermissionStatus(wkWebExtensionPermissionStatus(status), for: parsedURL)
-    return WK_OK
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_permission_status_for_match_pattern")
 public func wk_web_extension_context_permission_status_for_match_pattern(
     _ ptr: UnsafeMutableRawPointer?,
     _ patternPtr: UnsafeMutableRawPointer?
 ) -> Int64 {
-    guard let ptr, let patternPtr, #available(macOS 15.4, *) else { return 0 }
-    let box: WKWebExtensionContextBox = wkBorrow(ptr)
-    let patternBox: WKWebExtensionMatchPatternBox = wkBorrow(patternPtr)
-    return Int64(box.context.permissionStatus(for: patternBox.matchPattern).rawValue)
+    return wkOnMain {
+        guard let ptr, let patternPtr, #available(macOS 15.4, *) else { return 0 }
+        let box: WKWebExtensionContextBox = wkBorrow(ptr)
+        let patternBox: WKWebExtensionMatchPatternBox = wkBorrow(patternPtr)
+        return Int64(box.context.permissionStatus(for: patternBox.matchPattern).rawValue)
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_set_permission_status_for_match_pattern")
 public func wk_web_extension_context_set_permission_status_for_match_pattern(
     _ ptr: UnsafeMutableRawPointer?,
@@ -1070,17 +1102,18 @@ public func wk_web_extension_context_set_permission_status_for_match_pattern(
     _ patternPtr: UnsafeMutableRawPointer?,
     _ outErr: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
 ) -> Int32 {
-    guard let ptr, let patternPtr, #available(macOS 15.4, *) else {
-        outErr?.pointee = wkCString("missing match pattern permission target")
-        return WK_INVALID_ARGUMENT
+    return wkOnMain {
+        guard let ptr, let patternPtr, #available(macOS 15.4, *) else {
+            outErr?.pointee = wkCString("missing match pattern permission target")
+            return WK_INVALID_ARGUMENT
+        }
+        let box: WKWebExtensionContextBox = wkBorrow(ptr)
+        let patternBox: WKWebExtensionMatchPatternBox = wkBorrow(patternPtr)
+        box.context.setPermissionStatus(wkWebExtensionPermissionStatus(status), for: patternBox.matchPattern)
+        return WK_OK
     }
-    let box: WKWebExtensionContextBox = wkBorrow(ptr)
-    let patternBox: WKWebExtensionMatchPatternBox = wkBorrow(patternPtr)
-    box.context.setPermissionStatus(wkWebExtensionPermissionStatus(status), for: patternBox.matchPattern)
-    return WK_OK
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_load_background_content")
 public func wk_web_extension_context_load_background_content(
     _ ptr: UnsafeMutableRawPointer?,
@@ -1107,84 +1140,88 @@ public func wk_web_extension_context_load_background_content(
     return status
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_copy_default_action_json")
 public func wk_web_extension_context_copy_default_action_json(
     _ ptr: UnsafeMutableRawPointer?
 ) -> UnsafeMutablePointer<CChar>? {
-    guard let ptr, #available(macOS 15.4, *) else { return wkCString("null") }
-    let box: WKWebExtensionContextBox = wkBorrow(ptr)
-    guard let action = box.context.action(for: nil) else {
-        return wkCString("null")
+    return wkOnMain {
+        guard let ptr, #available(macOS 15.4, *) else { return wkCString("null") }
+        let box: WKWebExtensionContextBox = wkBorrow(ptr)
+        guard let action = box.context.action(for: nil) else {
+            return wkCString("null")
+        }
+        return wkCString(wkJSONString(wkWebExtensionActionDictionary(action)))
     }
-    return wkCString(wkJSONString(wkWebExtensionActionDictionary(action)))
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_perform_default_action")
 public func wk_web_extension_context_perform_default_action(_ ptr: UnsafeMutableRawPointer?) {
-    guard let ptr, #available(macOS 15.4, *) else { return }
-    let box: WKWebExtensionContextBox = wkBorrow(ptr)
-    box.context.performAction(for: nil)
+    wkOnMain {
+        guard let ptr, #available(macOS 15.4, *) else { return }
+        let box: WKWebExtensionContextBox = wkBorrow(ptr)
+        box.context.performAction(for: nil)
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_copy_commands_json")
 public func wk_web_extension_context_copy_commands_json(
     _ ptr: UnsafeMutableRawPointer?
 ) -> UnsafeMutablePointer<CChar>? {
-    guard let ptr, #available(macOS 15.4, *) else { return wkCString("[]") }
-    let box: WKWebExtensionContextBox = wkBorrow(ptr)
-    return wkCString(wkJSONString(box.context.commands.map(wkWebExtensionCommandDictionary)))
+    return wkOnMain {
+        guard let ptr, #available(macOS 15.4, *) else { return wkCString("[]") }
+        let box: WKWebExtensionContextBox = wkBorrow(ptr)
+        return wkCString(wkJSONString(box.context.commands.map(wkWebExtensionCommandDictionary)))
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_context_perform_command_for_identifier")
 public func wk_web_extension_context_perform_command_for_identifier(
     _ ptr: UnsafeMutableRawPointer?,
     _ identifier: UnsafePointer<CChar>?,
     _ outErr: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
 ) -> Int32 {
-    guard let ptr, let identifier, #available(macOS 15.4, *) else {
-        outErr?.pointee = wkCString("missing web extension command identifier")
-        return WK_INVALID_ARGUMENT
+    return wkOnMain {
+        guard let ptr, let identifier, #available(macOS 15.4, *) else {
+            outErr?.pointee = wkCString("missing web extension command identifier")
+            return WK_INVALID_ARGUMENT
+        }
+        let box: WKWebExtensionContextBox = wkBorrow(ptr)
+        let identifierString = String(cString: identifier)
+        guard let command = box.context.commands.first(where: { $0.id == identifierString }) else {
+            outErr?.pointee = wkCString("unknown web extension command identifier")
+            return WK_INVALID_ARGUMENT
+        }
+        box.context.performCommand(command)
+        return WK_OK
     }
-    let box: WKWebExtensionContextBox = wkBorrow(ptr)
-    let identifierString = String(cString: identifier)
-    guard let command = box.context.commands.first(where: { $0.id == identifierString }) else {
-        outErr?.pointee = wkCString("unknown web extension command identifier")
-        return WK_INVALID_ARGUMENT
-    }
-    box.context.performCommand(command)
-    return WK_OK
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_message_port_release")
 public func wk_web_extension_message_port_release(_ ptr: UnsafeMutableRawPointer?) {
     guard let ptr else { return }
-    wkRelease(ptr)
+    wkReleaseOnMain(ptr)
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_message_port_copy_application_identifier")
 public func wk_web_extension_message_port_copy_application_identifier(
     _ ptr: UnsafeMutableRawPointer?
 ) -> UnsafeMutablePointer<CChar>? {
-    guard let ptr, #available(macOS 15.4, *) else { return nil }
-    let box: WKWebExtensionMessagePortBox = wkBorrow(ptr)
-    return box.port.applicationIdentifier.flatMap(wkCString)
+    return wkOnMain {
+        guard let ptr, #available(macOS 15.4, *) else { return nil }
+        let box: WKWebExtensionMessagePortBox = wkBorrow(ptr)
+        return box.port.applicationIdentifier.flatMap(wkCString)
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_message_port_is_disconnected")
 public func wk_web_extension_message_port_is_disconnected(_ ptr: UnsafeMutableRawPointer?) -> Bool {
-    guard let ptr, #available(macOS 15.4, *) else { return true }
-    let box: WKWebExtensionMessagePortBox = wkBorrow(ptr)
-    return box.port.isDisconnected
+    return wkOnMain {
+        guard let ptr, #available(macOS 15.4, *) else { return true }
+        let box: WKWebExtensionMessagePortBox = wkBorrow(ptr)
+        return box.port.isDisconnected
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_message_port_send_message_json")
 public func wk_web_extension_message_port_send_message_json(
     _ ptr: UnsafeMutableRawPointer?,
@@ -1213,26 +1250,28 @@ public func wk_web_extension_message_port_send_message_json(
     return status
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_message_port_disconnect")
 public func wk_web_extension_message_port_disconnect(_ ptr: UnsafeMutableRawPointer?) {
-    guard let ptr, #available(macOS 15.4, *) else { return }
-    let box: WKWebExtensionMessagePortBox = wkBorrow(ptr)
-    box.port.disconnect()
+    wkOnMain {
+        guard let ptr, #available(macOS 15.4, *) else { return }
+        let box: WKWebExtensionMessagePortBox = wkBorrow(ptr)
+        box.port.disconnect()
+    }
 }
 
-@available(macOS 15.4, *)
 @_cdecl("wk_web_extension_message_port_disconnect_with_error")
 public func wk_web_extension_message_port_disconnect_with_error(
     _ ptr: UnsafeMutableRawPointer?,
     _ message: UnsafePointer<CChar>?
 ) {
-    guard let ptr, #available(macOS 15.4, *) else { return }
-    let box: WKWebExtensionMessagePortBox = wkBorrow(ptr)
-    let error = NSError(
-        domain: WKWebExtension.MessagePort.errorDomain,
-        code: WKWebExtension.MessagePort.Error.unknown.rawValue,
-        userInfo: [NSLocalizedDescriptionKey: message.map(String.init(cString:)) ?? "Disconnected"]
-    )
-    box.port.disconnect(throwing: error)
+    wkOnMain {
+        guard let ptr, #available(macOS 15.4, *) else { return }
+        let box: WKWebExtensionMessagePortBox = wkBorrow(ptr)
+        let error = NSError(
+            domain: WKWebExtension.MessagePort.errorDomain,
+            code: WKWebExtension.MessagePort.Error.unknown.rawValue,
+            userInfo: [NSLocalizedDescriptionKey: message.map(String.init(cString:)) ?? "Disconnected"]
+        )
+        box.port.disconnect(throwing: error)
+    }
 }

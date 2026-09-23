@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 
 use crate::back_forward_list::BackForwardListItem;
+use crate::ui_delegate::SecurityOrigin;
 
 /// Wraps `WKNavigationActionPolicy` values.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -141,12 +142,9 @@ pub struct FrameInfo {
     pub request_url: String,
     /// Mirrors the `request_method` value exposed by `WKFrameInfo`.
     pub request_method: String,
-    /// Mirrors the `security_origin_protocol` value exposed by `WKFrameInfo`.
-    pub security_origin_protocol: Option<String>,
-    /// Mirrors the `security_origin_host` value exposed by `WKFrameInfo`.
-    pub security_origin_host: Option<String>,
-    /// Mirrors the `security_origin_port` value exposed by `WKFrameInfo`.
-    pub security_origin_port: Option<i64>,
+    #[allow(missing_docs)]
+    #[serde(default)]
+    pub security_origin: SecurityOrigin,
     /// Mirrors the `webview_url` value exposed by `WKFrameInfo`.
     pub webview_url: Option<String>,
 }

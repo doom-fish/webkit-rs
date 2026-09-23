@@ -211,8 +211,8 @@ impl WebsiteDataStore {
         let status = unsafe {
             ffi::wk_website_data_store_for_identifier(
                 c_identifier.as_ptr(),
-                &mut out_store,
-                &mut out_err,
+                &raw mut out_store,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -228,7 +228,10 @@ impl WebsiteDataStore {
         let mut out_json = ptr::null_mut();
         let mut out_err = ptr::null_mut();
         let status = unsafe {
-            ffi::wk_website_data_store_fetch_all_identifiers_json(&mut out_json, &mut out_err)
+            ffi::wk_website_data_store_fetch_all_identifiers_json(
+                &raw mut out_json,
+                &raw mut out_err,
+            )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);
@@ -243,7 +246,7 @@ impl WebsiteDataStore {
         let status = unsafe {
             ffi::wk_website_data_store_remove_data_store_for_identifier(
                 c_identifier.as_ptr(),
-                &mut out_err,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -278,9 +281,9 @@ impl WebsiteDataStore {
         let status = unsafe {
             ffi::wk_website_data_store_copy_proxy_configurations(
                 self.ptr,
-                &mut out_proxy_configurations,
-                &mut out_len,
-                &mut out_err,
+                &raw mut out_proxy_configurations,
+                &raw mut out_len,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -322,7 +325,7 @@ impl WebsiteDataStore {
                 self.ptr,
                 raw_proxy_configurations.as_ptr(),
                 raw_proxy_configurations.len(),
-                &mut out_err,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -335,7 +338,7 @@ impl WebsiteDataStore {
     pub fn clear_proxy_configurations(&self) -> Result<(), WebKitError> {
         let mut out_err = ptr::null_mut();
         let status = unsafe {
-            ffi::wk_website_data_store_clear_proxy_configurations(self.ptr, &mut out_err)
+            ffi::wk_website_data_store_clear_proxy_configurations(self.ptr, &raw mut out_err)
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
             return Err(error);
@@ -363,8 +366,8 @@ impl WebsiteDataStore {
             ffi::wk_website_data_store_fetch_data_records_json(
                 self.ptr,
                 data_types_json.as_ptr(),
-                &mut out_json,
-                &mut out_err,
+                &raw mut out_json,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -391,7 +394,7 @@ impl WebsiteDataStore {
                 self.ptr,
                 data_types_json.as_ptr(),
                 display_names_json.as_ptr(),
-                &mut out_err,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -417,7 +420,7 @@ impl WebsiteDataStore {
                 self.ptr,
                 data_types_json.as_ptr(),
                 modified_since,
-                &mut out_err,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -436,9 +439,9 @@ impl WebsiteDataStore {
             ffi::wk_website_data_store_fetch_data(
                 self.ptr,
                 data_types_json.as_ptr(),
-                &mut out_bytes,
-                &mut out_len,
-                &mut out_err,
+                &raw mut out_bytes,
+                &raw mut out_len,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {
@@ -455,7 +458,7 @@ impl WebsiteDataStore {
                 self.ptr,
                 data.as_ptr(),
                 data.len(),
-                &mut out_err,
+                &raw mut out_err,
             )
         };
         if let Some(error) = unsafe { maybe_take_error(status, out_err) } {

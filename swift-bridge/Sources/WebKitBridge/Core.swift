@@ -6,8 +6,100 @@ let WK_OK: Int32 = 0
 let WK_INVALID_ARGUMENT: Int32 = -1
 let WK_UNSUPPORTED: Int32 = -2
 let WK_TIMED_OUT: Int32 = -3
+let WK_INVALID_STATE: Int32 = -4
 let WK_FRAMEWORK_ERROR: Int32 = -5
 let WK_UNKNOWN: Int32 = -99
+
+let WK_EVENT_QUEUE_MAX_EVENTS = 1024
+let WK_EVENT_QUEUE_MAX_BYTES = 4 * 1024 * 1024
+
+public typealias WKContextRetainCallback = @convention(c) (UnsafeMutableRawPointer?) -> Void
+public typealias WKContextReleaseCallback = @convention(c) (UnsafeMutableRawPointer?) -> Void
+
+final class WKRustCallback<Function> {
+    let function: Function
+    let userInfo: UnsafeMutableRawPointer
+    private let release: WKContextReleaseCallback
+
+    init?(
+        function: Function?,
+        userInfo: UnsafeMutableRawPointer?,
+        retain: WKContextRetainCallback?,
+        release: WKContextReleaseCallback?
+    ) {
+        guard let function, let userInfo, let retain, let release else {
+            return nil
+        }
+        self.function = function
+        self.userInfo = userInfo
+        self.release = release
+        retain(userInfo)
+    }
+
+    deinit {
+        release(userInfo)
+    }
+}
+
+final class WKRustEventQueue {
+    private let maxEvents: Int
+    private let maxBytes: Int
+    private var entries: [String] = []
+    private var sizes: [Int] = []
+    private var start = 0
+    private var bytes = 0
+    private var dropped: UInt64 = 0
+
+    init(maxEvents: Int = WK_EVENT_QUEUE_MAX_EVENTS, maxBytes: Int = WK_EVENT_QUEUE_MAX_BYTES) {
+        self.maxEvents = max(1, maxEvents)
+        self.maxBytes = max(1, maxBytes)
+    }
+
+    private var count: Int {
+        entries.count - start
+    }
+
+    func append(_ payload: [String: Any]) {
+        append(json: wkJSONString(payload))
+    }
+
+    func append(json: String) {
+        let size = json.utf8.count
+        guard size <= maxBytes else {
+            dropped &+= 1
+            return
+        }
+        while count > 0, count >= maxEvents || bytes + size > maxBytes {
+            dropOldest()
+        }
+        entries.append(json)
+        sizes.append(size)
+        bytes += size
+    }
+
+    private func dropOldest() {
+        bytes -= sizes[start]
+        entries[start] = ""
+        start += 1
+        dropped &+= 1
+        if start >= 64, start * 2 >= entries.count {
+            entries.removeFirst(start)
+            sizes.removeFirst(start)
+            start = 0
+        }
+    }
+
+    func drain() -> UnsafeMutablePointer<CChar>? {
+        let events = entries[start...].joined(separator: ",")
+        let json = "{\"dropped\":\(dropped),\"events\":[\(events)]}"
+        entries.removeAll()
+        sizes.removeAll()
+        start = 0
+        bytes = 0
+        dropped = 0
+        return wkCString(json)
+    }
+}
 
 @inline(__always)
 func wkCString(_ string: String) -> UnsafeMutablePointer<CChar>? {
@@ -37,6 +129,82 @@ func wkOnMain<T>(_ work: () -> T) -> T {
     return DispatchQueue.main.sync(execute: work)
 }
 
+func wkReleaseOnMain(_ ptr: UnsafeMutableRawPointer) {
+    if Thread.isMainThread {
+        wkRelease(ptr)
+        return
+    }
+    let address = UInt(bitPattern: ptr)
+    DispatchQueue.main.async {
+        if let pointer = UnsafeMutableRawPointer(bitPattern: address) {
+            wkRelease(pointer)
+        }
+    }
+}
+
+func wkSecurityOriginDictionary(_ origin: WKSecurityOrigin) -> [String: Any] {
+    [
+        "protocol": origin.protocol,
+        "host": origin.host,
+        "port": origin.port
+    ]
+}
+
+func wkFrameInfoDictionary(_ frameInfo: WKFrameInfo) -> [String: Any] {
+    [
+        "mainFrame": frameInfo.isMainFrame,
+        "requestUrl": frameInfo.request.url?.absoluteString ?? "",
+        "requestMethod": frameInfo.request.httpMethod ?? "GET",
+        "securityOrigin": wkSecurityOriginDictionary(frameInfo.securityOrigin),
+        "webviewUrl": frameInfo.webView?.url?.absoluteString ?? NSNull()
+    ]
+}
+
+func wkContentWorldDictionary(_ world: WKContentWorld) -> [String: Any] {
+    if world === WKContentWorld.page {
+        return ["kind": "page"]
+    }
+    if world === WKContentWorld.defaultClient {
+        return ["kind": "defaultClient"]
+    }
+    return ["kind": "named", "name": world.name ?? ""]
+}
+
+func wkContentWorldKey(_ world: WKContentWorld) -> String {
+    if world === WKContentWorld.page {
+        return "page"
+    }
+    if world === WKContentWorld.defaultClient {
+        return "defaultClient"
+    }
+    return "named:" + (world.name ?? "")
+}
+
+func wkContentWorld(kind: Int32, name: String?) -> WKContentWorld? {
+    switch kind {
+    case 0:
+        return .page
+    case 1:
+        return .defaultClient
+    case 2:
+        guard let name, !name.isEmpty else {
+            return nil
+        }
+        return .world(name: name)
+    default:
+        return nil
+    }
+}
+
+final class WKFrameInfoBox: NSObject {
+    let frameInfo: WKFrameInfo
+
+    init(frameInfo: WKFrameInfo) {
+        self.frameInfo = frameInfo
+        super.init()
+    }
+}
+
 func wkJSONString(_ object: Any) -> String {
     guard JSONSerialization.isValidJSONObject(object),
           let data = try? JSONSerialization.data(withJSONObject: object, options: []),
@@ -58,14 +226,15 @@ func wkJSONObject(from jsonCString: UnsafePointer<CChar>?) -> Any? {
     return try? JSONSerialization.jsonObject(with: data, options: [])
 }
 
-func wkDictionaryArray(from jsonCString: UnsafePointer<CChar>?) -> [[String: Any]] {
-    wkJSONObject(from: jsonCString) as? [[String: Any]] ?? []
+func wkJavaScriptArguments(from jsonCString: UnsafePointer<CChar>?) -> [String: Any]? {
+    guard let jsonCString else {
+        return [:]
+    }
+    return wkJSONObject(from: jsonCString) as? [String: Any]
 }
 
-func wkDrainEvents(_ events: inout [[String: Any]]) -> UnsafeMutablePointer<CChar>? {
-    let drained = events
-    events.removeAll()
-    return wkCString(wkJSONString(drained))
+func wkDictionaryArray(from jsonCString: UnsafePointer<CChar>?) -> [[String: Any]] {
+    wkJSONObject(from: jsonCString) as? [[String: Any]] ?? []
 }
 
 func wkRunLoopStep() {
@@ -141,8 +310,9 @@ func wkCookieDictionary(_ cookie: HTTPCookie) -> [String: Any] {
         "httpOnly": cookie.isHTTPOnly,
         "sessionOnly": cookie.isSessionOnly
     ]
-    if let expiresDate = cookie.expiresDate {
-        dictionary["expires"] = Int(expiresDate.timeIntervalSince1970)
+    if let expiresDate = cookie.expiresDate, expiresDate.timeIntervalSince1970.isFinite {
+        let seconds = expiresDate.timeIntervalSince1970.rounded(.down)
+        dictionary["expires"] = seconds >= 9.2e18 ? Int64.max : (seconds <= -9.2e18 ? Int64.min : Int64(seconds))
     } else {
         dictionary["expires"] = NSNull()
     }
@@ -174,6 +344,19 @@ public func wk_bytes_free(_ ptr: UnsafeMutablePointer<UInt8>?, _ len: Int) {
 public func wk_pointer_array_free(_ ptr: UnsafeMutablePointer<UnsafeMutableRawPointer?>?) {
     guard let ptr else { return }
     ptr.deallocate()
+}
+
+@_cdecl("wk_frame_info_retain")
+public func wk_frame_info_retain(_ ptr: UnsafeMutableRawPointer?) -> UnsafeMutableRawPointer? {
+    guard let ptr else { return nil }
+    _ = Unmanaged<AnyObject>.fromOpaque(ptr).retain()
+    return ptr
+}
+
+@_cdecl("wk_frame_info_release")
+public func wk_frame_info_release(_ ptr: UnsafeMutableRawPointer?) {
+    guard let ptr else { return }
+    wkReleaseOnMain(ptr)
 }
 
 @_cdecl("wk_run_loop_pump")

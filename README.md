@@ -12,11 +12,13 @@ use webkit::prelude::*;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = WebViewConfiguration::new();
     config.use_nonpersistent_data_store();
-    config.add_message_handler("bridge");
+    config.add_message_handler("bridge", &ContentWorld::Page)?;
 
     let mut view = WebView::with_config(&config)?;
-    view.set_message_handler(|name, body| {
-        println!("message [{name}]: {body}");
+    view.set_message_handler(|message| {
+        if message.frame.main_frame {
+            println!("message [{}]: {}", message.name, message.body);
+        }
     });
 
     view.load_html(

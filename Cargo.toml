@@ -58,6 +58,10 @@ rustdoc-args = ["--cfg", "docsrs"]
 [badges]
 maintenance = { status = "actively-developed" }
 
+[[test]]
+name = "main_thread"
+harness = false
+
 [[example]]
 name = "01_load_eval"
 

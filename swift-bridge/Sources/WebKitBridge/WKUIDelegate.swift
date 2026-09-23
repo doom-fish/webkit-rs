@@ -21,14 +21,6 @@ private func wkOpenPanelParametersDictionary(_ parameters: WKOpenPanelParameters
     ]
 }
 
-private func wkSecurityOriginDictionary(_ origin: WKSecurityOrigin) -> [String: Any] {
-    [
-        "protocol": origin.protocol,
-        "host": origin.host,
-        "port": origin.port
-    ]
-}
-
 private func wkMediaCaptureTypeString(_ type: WKMediaCaptureType) -> String {
     switch type {
     case .camera:
@@ -58,11 +50,7 @@ private func wkPermissionDecisionString(_ decision: WKPermissionDecision) -> Str
 final class WKRustUIDelegate: NSObject, WKUIDelegate {
     var confirmResponse = false
     var promptResponse: String?
-    var events: [[String: Any]] = []
-
-    func drainEvents() -> UnsafeMutablePointer<CChar>? {
-        wkDrainEvents(&events)
-    }
+    let events = WKRustEventQueue()
 
     private func emit(_ payload: [String: Any]) {
         events.append(payload)

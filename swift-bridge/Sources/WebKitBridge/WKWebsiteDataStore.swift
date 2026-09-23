@@ -24,12 +24,12 @@ final class WKWebsiteDataStoreBox: NSObject {
 
 @_cdecl("wk_website_data_store_default")
 public func wk_website_data_store_default() -> UnsafeMutableRawPointer {
-    wkRetain(WKWebsiteDataStoreBox(dataStore: WKWebsiteDataStore.default()))
+    wkOnMain { wkRetain(WKWebsiteDataStoreBox(dataStore: WKWebsiteDataStore.default())) }
 }
 
 @_cdecl("wk_website_data_store_nonpersistent")
 public func wk_website_data_store_nonpersistent() -> UnsafeMutableRawPointer {
-    wkRetain(WKWebsiteDataStoreBox(dataStore: WKWebsiteDataStore.nonPersistent()))
+    wkOnMain { wkRetain(WKWebsiteDataStoreBox(dataStore: WKWebsiteDataStore.nonPersistent())) }
 }
 
 @_cdecl("wk_website_data_store_for_identifier")
@@ -50,36 +50,39 @@ public func wk_website_data_store_for_identifier(
         outErr?.pointee = wkCString("invalid data store identifier")
         return WK_INVALID_ARGUMENT
     }
-    outStore?.pointee = wkRetain(WKWebsiteDataStoreBox(dataStore: WKWebsiteDataStore(forIdentifier: uuid)))
+    outStore?.pointee = wkOnMain { wkRetain(WKWebsiteDataStoreBox(dataStore: WKWebsiteDataStore(forIdentifier: uuid))) }
     return WK_OK
 }
 
 @_cdecl("wk_website_data_store_release")
 public func wk_website_data_store_release(_ ptr: UnsafeMutableRawPointer?) {
     guard let ptr else { return }
-    wkRelease(ptr)
+    wkReleaseOnMain(ptr)
 }
 
 @_cdecl("wk_website_data_store_is_persistent")
 public func wk_website_data_store_is_persistent(_ ptr: UnsafeMutableRawPointer?) -> Bool {
     guard let ptr else { return false }
     let box: WKWebsiteDataStoreBox = wkBorrow(ptr)
-    return box.dataStore.isPersistent
+    return wkOnMain { box.dataStore.isPersistent }
 }
 
 @_cdecl("wk_website_data_store_copy_identifier")
 public func wk_website_data_store_copy_identifier(_ ptr: UnsafeMutableRawPointer?) -> UnsafeMutablePointer<CChar>? {
     guard let ptr else { return nil }
     let box: WKWebsiteDataStoreBox = wkBorrow(ptr)
-    if #available(macOS 14.0, *), let identifier = box.dataStore.identifier {
-        return wkCString(identifier.uuidString)
+    let identifier: String? = wkOnMain {
+        if #available(macOS 14.0, *) {
+            return box.dataStore.identifier?.uuidString
+        }
+        return nil
     }
-    return nil
+    return identifier.flatMap(wkCString)
 }
 
 @_cdecl("wk_website_data_store_copy_all_data_types_json")
 public func wk_website_data_store_copy_all_data_types_json() -> UnsafeMutablePointer<CChar>? {
-    wkCString(wkJSONString(Array(WKWebsiteDataStore.allWebsiteDataTypes()).sorted()))
+    wkCString(wkOnMain { wkJSONString(Array(WKWebsiteDataStore.allWebsiteDataTypes()).sorted()) })
 }
 
 @_cdecl("wk_website_data_store_fetch_all_identifiers_json")
@@ -140,7 +143,7 @@ public func wk_website_data_store_remove_data_store_for_identifier(
 public func wk_website_data_store_copy_http_cookie_store(_ ptr: UnsafeMutableRawPointer?) -> UnsafeMutableRawPointer? {
     guard let ptr else { return nil }
     let box: WKWebsiteDataStoreBox = wkBorrow(ptr)
-    return wkRetain(WKHTTPCookieStoreBox(cookieStore: box.dataStore.httpCookieStore))
+    return wkOnMain { wkRetain(WKHTTPCookieStoreBox(cookieStore: box.dataStore.httpCookieStore)) }
 }
 
 @_cdecl("wk_website_data_store_fetch_data_records_json")
@@ -232,7 +235,6 @@ public func wk_website_data_store_remove_data_modified_since(
     return status
 }
 
-@available(macOS 14.0, *)
 @_cdecl("wk_website_data_store_copy_proxy_configurations")
 public func wk_website_data_store_copy_proxy_configurations(
     _ ptr: UnsafeMutableRawPointer?,
@@ -249,7 +251,7 @@ public func wk_website_data_store_copy_proxy_configurations(
         return WK_UNSUPPORTED
     }
     let box: WKWebsiteDataStoreBox = wkBorrow(ptr)
-    let proxyConfigurations = box.dataStore.proxyConfigurations
+    let proxyConfigurations = wkOnMain { box.dataStore.proxyConfigurations }
     guard !proxyConfigurations.isEmpty else {
         outProxyConfigurations.pointee = nil
         outLen.pointee = 0
@@ -265,7 +267,6 @@ public func wk_website_data_store_copy_proxy_configurations(
     return WK_OK
 }
 
-@available(macOS 14.0, *)
 @_cdecl("wk_website_data_store_set_proxy_configurations")
 public func wk_website_data_store_set_proxy_configurations(
     _ ptr: UnsafeMutableRawPointer?,
@@ -287,7 +288,9 @@ public func wk_website_data_store_set_proxy_configurations(
         return WK_INVALID_ARGUMENT
     }
     guard let proxyConfigurations else {
-        box.dataStore.proxyConfigurations = []
+        wkOnMain {
+            box.dataStore.proxyConfigurations = []
+        }
         return WK_OK
     }
 
@@ -301,11 +304,12 @@ public func wk_website_data_store_set_proxy_configurations(
         let proxyConfigurationBox: WKProxyConfigurationBox = wkBorrow(rawProxyConfiguration)
         resolved.append(proxyConfigurationBox.proxyConfiguration)
     }
-    box.dataStore.proxyConfigurations = resolved
+    wkOnMain {
+        box.dataStore.proxyConfigurations = resolved
+    }
     return WK_OK
 }
 
-@available(macOS 14.0, *)
 @_cdecl("wk_website_data_store_clear_proxy_configurations")
 public func wk_website_data_store_clear_proxy_configurations(
     _ ptr: UnsafeMutableRawPointer?,
@@ -320,11 +324,12 @@ public func wk_website_data_store_clear_proxy_configurations(
         return WK_UNSUPPORTED
     }
     let box: WKWebsiteDataStoreBox = wkBorrow(ptr)
-    box.dataStore.proxyConfigurations = []
+    wkOnMain {
+        box.dataStore.proxyConfigurations = []
+    }
     return WK_OK
 }
 
-@available(macOS 26.0, *)
 @_cdecl("wk_website_data_store_fetch_data")
 public func wk_website_data_store_fetch_data(
     _ ptr: UnsafeMutableRawPointer?,
@@ -360,7 +365,6 @@ public func wk_website_data_store_fetch_data(
     return status
 }
 
-@available(macOS 26.0, *)
 @_cdecl("wk_website_data_store_restore_data")
 public func wk_website_data_store_restore_data(
     _ ptr: UnsafeMutableRawPointer?,
