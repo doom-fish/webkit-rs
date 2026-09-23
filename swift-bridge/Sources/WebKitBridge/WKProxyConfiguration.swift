@@ -3,11 +3,24 @@ import Network
 
 @available(macOS 14.0, *)
 final class WKProxyConfigurationBox: NSObject {
-    var proxyConfiguration: Network.ProxyConfiguration
+    private let lock = NSLock()
+    private var storage: Network.ProxyConfiguration
 
     init(proxyConfiguration: Network.ProxyConfiguration) {
-        self.proxyConfiguration = proxyConfiguration
+        self.storage = proxyConfiguration
         super.init()
+    }
+
+    var proxyConfiguration: Network.ProxyConfiguration {
+        lock.lock()
+        defer { lock.unlock() }
+        return storage
+    }
+
+    func mutate(_ body: (inout Network.ProxyConfiguration) -> Void) {
+        lock.lock()
+        defer { lock.unlock() }
+        body(&storage)
     }
 }
 
@@ -129,7 +142,7 @@ public func wk_proxy_configuration_set_username_and_password(
         return WK_UNSUPPORTED
     }
     let box: WKProxyConfigurationBox = wkBorrow(ptr)
-    nw_proxy_config_set_username_and_password(box.proxyConfiguration._nw, username, password)
+    box.mutate { nw_proxy_config_set_username_and_password($0._nw, username, password) }
     return WK_OK
 }
 
@@ -148,7 +161,7 @@ public func wk_proxy_configuration_set_failover_allowed(
         return WK_UNSUPPORTED
     }
     let box: WKProxyConfigurationBox = wkBorrow(ptr)
-    box.proxyConfiguration.allowFailover = allowed
+    box.mutate { $0.allowFailover = allowed }
     return WK_OK
 }
 
@@ -167,7 +180,8 @@ public func wk_proxy_configuration_add_match_domain(
         return WK_UNSUPPORTED
     }
     let box: WKProxyConfigurationBox = wkBorrow(ptr)
-    box.proxyConfiguration.matchDomains.append(String(cString: domain))
+    let matchDomain = String(cString: domain)
+    box.mutate { $0.matchDomains.append(matchDomain) }
     return WK_OK
 }
 
@@ -185,7 +199,7 @@ public func wk_proxy_configuration_clear_match_domains(
         return WK_UNSUPPORTED
     }
     let box: WKProxyConfigurationBox = wkBorrow(ptr)
-    box.proxyConfiguration.matchDomains = []
+    box.mutate { $0.matchDomains = [] }
     return WK_OK
 }
 
@@ -204,7 +218,8 @@ public func wk_proxy_configuration_add_excluded_domain(
         return WK_UNSUPPORTED
     }
     let box: WKProxyConfigurationBox = wkBorrow(ptr)
-    box.proxyConfiguration.excludedDomains.append(String(cString: domain))
+    let excludedDomain = String(cString: domain)
+    box.mutate { $0.excludedDomains.append(excludedDomain) }
     return WK_OK
 }
 
@@ -222,6 +237,6 @@ public func wk_proxy_configuration_clear_excluded_domains(
         return WK_UNSUPPORTED
     }
     let box: WKProxyConfigurationBox = wkBorrow(ptr)
-    box.proxyConfiguration.excludedDomains = []
+    box.mutate { $0.excludedDomains = [] }
     return WK_OK
 }
