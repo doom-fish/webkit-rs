@@ -1,5 +1,136 @@
 # Changelog
 
+All notable changes to `webkit` are documented here.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.4.0] - Unreleased
+
+### Security
+
+- Out-of-order `WKURLSchemeTask` calls no longer abort the process. Task state
+  (response sent, data sent, finished or failed, stopped by WebKit) is tracked
+  on the main thread, and calls that WebKit would answer with
+  `NSInternalInconsistencyException` return `WebKitError::InvalidState`
+  instead. That includes every call made after WebKit stopped the task, which
+  happens whenever a page navigates away while a handler is still responding.
+  Finished and failed tasks are removed from the handler's task table, which
+  used to keep every completed task alive.
+- Page JavaScript can no longer grow host memory without limit. Script
+  messages, JavaScript dialogs, navigation and back/forward list events, cookie
+  changes and download events are kept for the `drain_*` methods in bounded
+  queues (1024 events and 4 MiB per queue). The oldest events are dropped first
+  and every drain reports how many were dropped. Live handlers still receive
+  every event.
+- Script-message handlers receive the sending frame (main-frame flag, request
+  URL), its security origin (protocol, host, port) and the content world, so
+  they can reject messages from cross-origin iframes. Handlers can be
+  registered in an isolated content world that page scripts cannot reach, and
+  a reply handler's error rejects the page's promise.
+- Navigation policy can be decided per request. `set_navigation_action_handler`
+  sees the request URL, navigation type, source frame and origin, and target
+  frame; `set_navigation_response_handler` sees each response. A handler that
+  panics cancels the navigation. Without a handler the static
+  `NavigationDelegateConfig` policy applies, which still allows every
+  navigation by default, matching WebKit.
+- `call_async_javascript` passes a JSON object as WebKit `arguments` and takes
+  a content world and an optional target frame, so untrusted data no longer
+  has to be formatted into JavaScript source.
+- Download file names suggested by the server are sanitized: path separators,
+  `:` and control characters become `_`, leading dots are removed, names are
+  capped at 240 bytes, and the destination must stay inside the requested
+  directory.
+- `Cookie`'s `Debug` output redacts the cookie value.
+
+### Fixed
+
+- WebKit's classes are main-actor only, but most configuration, website data
+  store, cookie store, download, content rule list and web extension exports
+  ran on the caller's thread. Every export now runs on the main thread, the
+  web view box is created there, and every wrapper releases its Swift object on
+  the main thread (later, when dropped on another thread). Event drains no
+  longer race with the delegates that fill them.
+- `set_*_handler` and `WebView`'s `Drop` swap the Swift callback and its
+  context in one step on the main thread. The handler lives in a
+  `doom_fish_utils::callback_context::CallbackContext` that the Swift callback
+  slot retains, so a callback that is already running never sees a freed
+  handler, and a replaced or dropped handler is never called again.
+- Registering a script-message handler name that already exists in a content
+  world of a shared `WKUserContentController` returns an error instead of
+  raising `NSInvalidArgumentException`. Plain and reply handlers share one
+  namespace, as in WebKit. Handlers are registered once per user content
+  controller and routed to the web view that sent the message, so several
+  `WebView`s created from one configuration work and each gets its own
+  messages.
+- `set_url_scheme_handler` asks the configuration whether the scheme already
+  has a handler, so a copied configuration can no longer register a second one
+  and abort.
+- Exports that need a newer macOS than 13 (data-store identifiers and proxy
+  configurations on 14, web extensions on 15.4, data export / restore and
+  `showsSystemScreenTimeBlockingView` on 26) were declared `@available`, which
+  compiled their runtime checks away, so older systems would have called
+  missing symbols. They now return `WebKitError::Unsupported` there.
+- Reply-handler results are decoded as JSON fragments, so a reply such as
+  `"pong"` or `42` reaches JavaScript as a string or number rather than as
+  quoted text.
+- `ProxyConfiguration` setters raced when called from several threads (the
+  type is `Sync`); the Swift box now serializes access with a lock.
+- Cookie expiry dates outside the `i64` range no longer trap in Swift, and
+  copying a configuration for a web extension controller no longer uses a
+  force cast.
+
+### Changed
+
+- **Breaking:** `WebViewConfiguration::add_message_handler` and
+  `add_message_handler_with_reply` take a `ContentWorld` and return
+  `Result<(), WebKitError>`.
+- **Breaking:** message handlers are `Fn(&ScriptMessage)` and
+  `Fn(&ScriptMessage) -> Result<Option<Value>, WebKitError>`. `ScriptMessage`
+  has `frame: FrameInfo`, `world: ContentWorld` and
+  `frame_handle: Option<FrameHandle>` in place of `frame_url`, `is_main_frame`
+  and `world: Option<String>`.
+- **Breaking:** every `WebView` handler must be `Send + Sync`.
+- **Breaking:** `FrameInfo` has `security_origin: SecurityOrigin` in place of
+  the three optional `security_origin_*` fields.
+- **Breaking:** `WebView::drain_navigation_events`,
+  `drain_back_forward_list_navigation_events`, `drain_ui_events`,
+  `drain_ui_event_details`, `drain_script_messages`,
+  `HttpCookieStore::drain_events` and `Download::drain_events` return
+  `DrainedEvents<T>` (the events plus a `dropped` count).
+- **Breaking:** `WebView::call_async_javascript(function_body, arguments,
+  frame, content_world)`. `AsyncWebView::call_async_javascript` takes the same
+  arguments and returns `Result<CallAsyncJavaScriptFuture, WebKitError>`.
+- **Breaking:** `WebExtensionController::new` and `with_configuration`,
+  `WebExtensionControllerConfiguration::default_configuration` and
+  `non_persistent_configuration`, `WebExtensionMatchPattern::all_urls` and
+  `all_hosts_and_schemes`, and `WebExtensionContext::for_extension` return
+  `Result` instead of panicking; `WebExtensionController` no longer implements
+  `Default`.
+- **Breaking:** `WebKitError` has an `InvalidState` variant.
+- A call on any wrapper from a thread other than the main thread blocks until
+  the main thread runs its run loop or dispatch queue.
+- `rust-version` is 1.82 (was 1.76). Requires `apple-cf` 0.11 and
+  `doom-fish-utils` 0.4.1.
+
+### Added
+
+- `ContentWorld`, `FrameHandle` and `DrainedEvents`.
+- `WebView::set_navigation_action_handler` and
+  `set_navigation_response_handler`.
+- `WebViewConfiguration::remove_message_handler`.
+- `UrlSchemeRequest::body`, filled when WebKit supplies the request body as
+  data.
+- `tests/main_thread.rs`, a custom-harness test that runs live web views on
+  the process main thread through the fixed paths using `loadHTMLString`,
+  custom schemes and a loopback server.
+
+### Removed
+
+- **Breaking:** the public `wk_rust_release_url_scheme_handler` export, a safe
+  `extern "C"` function that called `Arc::from_raw` on any pointer. The Swift
+  handler now receives the release function as a parameter.
+
 ## [0.3.11] - 2026-05-20
 
 - Migrated local `take_string` body to call `doom_fish_utils::ffi_string::take_owned_cstring_c`. Centralises the duplicated FFI take-string pattern fleet-wide. No public API change.

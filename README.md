@@ -2,7 +2,12 @@
 
 Safe Rust bindings for Apple's `WKWebView` APIs on macOS.
 
-> **Status:** v0.3.0 — the audited macOS WebKit surface now includes Tier-1 async wrappers for WebKit completion-handler APIs alongside the existing synchronous coverage. See [`COVERAGE.md`](COVERAGE.md) for the audited SDK matrix.
+> **Status:** v0.4.0 hardens the bridge against untrusted web content (see [Handling untrusted web content](#handling-untrusted-web-content)) and runs every WebKit call on the main thread. See [`COVERAGE.md`](COVERAGE.md) for the SDK matrix.
+
+```toml
+[dependencies]
+webkit = "0.4"
+```
 
 ## Quick start
 
@@ -126,7 +131,7 @@ Enable the `async` feature for `Future`-based wrappers over WebKit's completion-
 
 ```toml
 [dependencies]
-webkit = { version = "0.3", features = ["async"] }
+webkit = { version = "0.4", features = ["async"] }
 ```
 
 | Type | Description |
