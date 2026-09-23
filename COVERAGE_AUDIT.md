@@ -2,6 +2,8 @@
 
 Full top-level symbol audit of WebKit.framework headers after filtering out declarations unavailable on macOS. Legacy DOM* / Web* APIs remain listed as EXEMPT because Apple deprecated them on macOS and this crate intentionally targets the modern WK* surface. Member-level MacOSX26.5 completeness closures are tracked in `COVERAGE.md`.
 
+> **What these numbers measure.** A symbol counts as VERIFIED when a Rust item with a matching role exists; the count doesn't say the API is reachable or wired to WebKit. Known overstatements: `WKWebExtensionControllerDelegate`, `WKWebExtensionTab` and `WKWebExtensionWindow` are Rust traits WebKit never calls (no delegate bridge), and `WKWebExtensionMessagePort` has no constructor, so it can't be obtained. The 233 EXEMPT entries are the deprecated legacy WebKit (DOM* / Web*) API, a scope choice rather than coverage. The table was generated before 0.4.0 and doesn't list `ContentWorld`, `FrameHandle` or the per-request navigation handlers. `COVERAGE.md` has the member-level status.
+
 SDK_PUBLIC_SYMBOLS: 367
 VERIFIED: 134
 GAPS: 0
@@ -15,7 +17,7 @@ COVERAGE_PCT: 100.0%
 | WKBackForwardListItem | interface | WKBackForwardListItem.h | BackForwardListItem |
 | WKContentRuleList | interface | WKContentRuleList.h | ContentRuleList |
 | WKContentRuleListStore | interface | WKContentRuleListStore.h | ContentRuleListStore |
-| WKContentWorld | interface | WKContentWorld.h | UserScript::with_content_world |
+| WKContentWorld | interface | WKContentWorld.h | ContentWorld, UserScript::with_content_world |
 | WKDownload | interface | WKDownload.h | Download |
 | WKDownloadDelegate | protocol | WKDownloadDelegate.h | DownloadEvent |
 | WKCookiePolicy | enum | WKHTTPCookieStore.h | CookiePolicy |
@@ -133,7 +135,7 @@ COVERAGE_PCT: 100.0%
 | WKErrorDomain | constant | WKError.h | WEBKIT_ERROR_DOMAIN, WebKitErrorCode::domain() |
 | WKOpenPanelParameters | interface | WKOpenPanelParameters.h | OpenPanelParameters, UIDelegateEventDetail::open_panel_parameters |
 | WKScriptMessageHandlerWithReply | protocol | WKScriptMessageHandlerWithReply.h | WebViewConfiguration::add_message_handler_with_reply, WebView::set_message_handler_with_reply |
-| WKSecurityOrigin | interface | WKSecurityOrigin.h | SecurityOrigin, UIDelegateEventDetail::security_origin |
+| WKSecurityOrigin | interface | WKSecurityOrigin.h | SecurityOrigin, FrameInfo::security_origin, UIDelegateEventDetail::security_origin |
 | WKMediaCaptureType | enum | WKUIDelegate.h | MediaCaptureType, UIDelegateEventDetail::media_capture_type |
 | WKPermissionDecision | enum | WKUIDelegate.h | PermissionDecision, UIDelegateEventDetail::permission_decision |
 | WKFullscreenState | enum | WKWebView.h | FullscreenState, WebView::fullscreen_state |
