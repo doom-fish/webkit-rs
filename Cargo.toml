@@ -9,7 +9,7 @@ description = "Safe Rust bindings for WebKit — Apple's WKWebView APIs on macOS
 authors = ["Per Johansson <per@doom.fish>"]
 keywords = ["webkit", "webview", "macos", "apple", "wkwebview"]
 categories = ["api-bindings", "os::macos-apis", "web-programming"]
-rust-version = "1.76"
+rust-version = "1.82"
 readme = "README.md"
 build = "build.rs"
 include = [
@@ -40,8 +40,8 @@ default = []
 async = []
 
 [dependencies]
-apple-cf = { path = "../apple-cf-rs", version = ">=0.2, <0.10", features = ["cg"] }
-doom-fish-utils = { path = "../doom-fish-utils", version = ">=0.1, <0.4" }
+apple-cf = { path = "../apple-cf-rs", version = ">=0.11, <0.12", features = ["cg"] }
+doom-fish-utils = { path = "../doom-fish-utils", version = ">=0.4.1, <0.5" }
 libc = "0.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
