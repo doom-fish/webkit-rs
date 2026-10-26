@@ -359,8 +359,8 @@ mod tests {
         let action = NavigationAction::default();
 
         assert_eq!(action.navigation_type, NavigationType::Other);
-        assert!(action.request_url.is_empty());
-        assert!(action.request_method.is_empty());
+        assert_eq!(action.request_url.len(), 0);
+        assert_eq!(action.request_method.len(), 0);
         assert!(action.request_headers.is_empty());
         assert!(action.target_frame.is_none());
         assert!(!action.should_perform_download);
@@ -371,7 +371,7 @@ mod tests {
     fn navigation_event_unknown_is_empty_and_reports_no_type() {
         let event = NavigationEvent::unknown();
 
-        assert!(event.url.is_empty());
+        assert_eq!(event.url.len(), 0);
         assert!(event.error.is_none());
         assert!(event.navigation_type.is_none());
         assert_eq!(event.navigation_type_enum(), None);

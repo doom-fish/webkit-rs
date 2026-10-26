@@ -80,7 +80,7 @@ mod tests {
             DrainedEvents::default()
         );
         let empty = DrainedEvents::<Event>::from_json(r#"{"dropped":0,"events":[]}"#);
-        assert!(empty.events.is_empty());
+        assert_eq!(empty.events.len(), 0);
         assert_eq!(empty.dropped, 0);
         let saturated =
             DrainedEvents::<Event>::from_json(r#"{"dropped":18446744073709551615,"events":[1]}"#);
