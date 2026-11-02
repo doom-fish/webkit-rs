@@ -361,8 +361,10 @@ public func wk_website_data_store_fetch_data(
     }
     if let data {
         wkSetBytes(data, outBytes, outLen)
+        return status
     }
-    return status
+    outErr?.pointee = wkCString("WebKit returned neither a result nor an error")
+    return WK_UNKNOWN
 }
 
 @_cdecl("wk_website_data_store_restore_data")
