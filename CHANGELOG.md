@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - `WebsiteDataStore::fetch_data` returns an error when WebKit gives no data and no error. Before this change, it returned empty data as a success.
+- `WebView::create_pdf` and the async `create_pdf` and `create_web_archive` functions return an error when WebKit gives no data and no error. Before this change, the Swift wrappers of WebKit stopped the process with a trap. The Swift bridge now calls the Objective-C completion-handler forms.
 
 ## [0.4.2] - 2026-10-26
 

@@ -186,13 +186,8 @@ final class WKWebViewBox: NSObject {
                     height: height,
                     allowTransparentBackground: allowTransparentBackground
                 )
-                self.webView.createPDF(configuration: configuration) { result in
-                    switch result {
-                    case let .success(data):
-                        completion(data, nil)
-                    case let .failure(error):
-                        completion(nil, error.localizedDescription)
-                    }
+                self.webView.__createPDF(with: configuration) { data, error in
+                    completion(data, error?.localizedDescription)
                 }
             }
         }

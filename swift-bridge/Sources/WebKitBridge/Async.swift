@@ -176,12 +176,13 @@ public func wk_webview_create_pdf_async(
             height: height,
             allowTransparentBackground: allowTransparentBackground
         )
-        box.webView.createPDF(configuration: configuration) { result in
-            switch result {
-            case let .success(data):
-                wkAsyncBytes(data, cb, ctx)
-            case let .failure(error):
+        box.webView.__createPDF(with: configuration) { data, error in
+            if let error {
                 error.localizedDescription.withCString { cb(nil, 0, $0, ctx) }
+            } else if let data {
+                wkAsyncBytes(data, cb, ctx)
+            } else {
+                "WebKit returned neither a result nor an error".withCString { cb(nil, 0, $0, ctx) }
             }
         }
     }
@@ -199,12 +200,13 @@ public func wk_webview_create_web_archive_async(
     }
     let box: WKWebViewBox = wkBorrow(ptr)
     DispatchQueue.main.async {
-        box.webView.createWebArchiveData { result in
-            switch result {
-            case let .success(data):
-                wkAsyncBytes(data, cb, ctx)
-            case let .failure(error):
+        box.webView.__createWebArchiveData { data, error in
+            if let error {
                 error.localizedDescription.withCString { cb(nil, 0, $0, ctx) }
+            } else if let data {
+                wkAsyncBytes(data, cb, ctx)
+            } else {
+                "WebKit returned neither a result nor an error".withCString { cb(nil, 0, $0, ctx) }
             }
         }
     }
