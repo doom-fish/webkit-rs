@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-11-02
+
 ### Fixed
 
 - `WebsiteDataStore::fetch_data` returns an error when WebKit gives no data and no error. Before this change, it returned empty data as a success.
